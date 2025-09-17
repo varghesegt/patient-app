@@ -28,6 +28,7 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
+  // Redirect to LOGIN instead of Home when not authenticated
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
@@ -39,13 +40,13 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Default Landing */}
       <Route
         path="/"
-        element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />
-        }
+        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />}
       />
+
+      {/* Auth Routes */}
       <Route
         path="/login"
         element={
@@ -59,7 +60,12 @@ export default function AppRouter() {
         }
       />
 
-      {/* Dashboard */}
+      {/* Publicly Accessible Routes */}
+      <Route path="/symptoms" element={<Symptoms />} />
+      <Route path="/emergency" element={<Emergency />} />
+      <Route path="/hospital" element={<Hospital />} />
+
+      {/* Protected Routes */}
       <Route
         path="/dashboard"
         element={
@@ -68,37 +74,11 @@ export default function AppRouter() {
           </PrivateRoute>
         }
       />
-
-      {/* Protected Routes */}
       <Route
         path="/profile"
         element={
           <PrivateRoute>
             <Profile />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/symptoms"
-        element={
-          <PrivateRoute>
-            <Symptoms />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/emergency"
-        element={
-          <PrivateRoute>
-            <Emergency />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/hospital"
-        element={
-          <PrivateRoute>
-            <Hospital />
           </PrivateRoute>
         }
       />
