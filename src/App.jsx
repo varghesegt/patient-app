@@ -1,0 +1,36 @@
+// src/App.jsx
+import React, { Suspense } from "react";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext"; // Corrected path
+import Navbar from "./components/layout/Navbar";
+import AppRouter from "./router/AppRouter";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <LanguageProvider>
+          <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 transition-colors duration-300">
+            
+            {/* Global Navbar */}
+            <Navbar />
+
+            {/* Main Content */}
+            <main className="flex-1">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-full py-20 text-sky-600 font-semibold animate-pulse">
+                    Loading...
+                  </div>
+                }
+              >
+                <AppRouter />
+              </Suspense>
+            </main>
+          </div>
+        </LanguageProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}

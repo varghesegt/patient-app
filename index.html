@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://yourdomain.com/" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#4F46E5" />
+
+    <!-- Mobile App Capabilities -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MediLink360" />
+
+    <!-- Apple Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/splash/launch-640x1136.png" media="(device-width: 320px) and (device-height: 568px)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-750x1334.png" media="(device-width: 375px) and (device-height: 667px)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-1242x2208.png" media="(device-width: 414px) and (device-height: 736px)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-1125x2436.png" media="(device-width: 375px) and (device-height: 812px)" />
+
+    <!-- SEO -->
+    <title>MediLink360 - Patient PWA</title>
+    <meta
+      name="description"
+      content="MediLink360: Next-gen patient management Progressive Web App with offline-first experience."
+    />
+    <meta
+      name="keywords"
+      content="healthcare, patient app, PWA, MediLink360, telemedicine, medical records, appointment booking"
+    />
+    <meta name="author" content="MediLink360 Team" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="MediLink360 - Patient PWA" />
+    <meta property="og:description" content="Next-gen patient management Progressive Web App prototype." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/social-preview.png" />
+    <meta property="og:url" content="https://yourdomain.com" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MediLink360 - Patient PWA" />
+    <meta name="twitter:description" content="Next-gen patient management Progressive Web App prototype." />
+    <meta name="twitter:image" content="/social-preview.png" />
+
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-icon-180.png" />
+    <link rel="mask-icon" href="/icons/mask-icon.svg" color="#4F46E5" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Security CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' 'unsafe-eval';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://overpass-api.de https://*.tile.openstreetmap.org;
+        object-src 'none';
+      "
+    />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MediLink360 Patient PWA",
+        "operatingSystem": "Android, iOS, Web",
+        "applicationCategory": "HealthApplication",
+        "description": "A next-gen Progressive Web App for patient healthcare management.",
+        "author": { "@type": "Organization", "name": "MediLink360" },
+        "url": "https://yourdomain.com",
+        "image": "https://yourdomain.com/social-preview.png"
+      }
+    </script>
+
+    <!-- Critical Styles -->
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f9fafb;
+        color: #111827;
+      }
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      #pwa-install-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: #4F46E5;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        z-index: 9999;
+        display: none;
+      }
+      #ios-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #111827;
+        color: #fff;
+        padding: 12px 16px;
+        font-size: 14px;
+        display: none;
+        text-align: center;
+        z-index: 9999;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root" role="main" aria-label="MediLink360 App"></div>
+    <button id="pwa-install-btn">📲 Install MediLink360</button>
+    <div id="ios-banner">Tap <strong>Share → Add to Home Screen</strong> to install MediLink360</div>
+
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Service Worker -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js") <!-- ✅ fixed filename -->
+            .then((reg) => console.log("✅ Service Worker registered:", reg.scope))
+            .catch((err) => console.error("❌ Service Worker failed:", err));
+        });
+      }
+    </script>
+
+    <!-- Install Prompt -->
+    <script>
+      let deferredPrompt;
+      const installBtn = document.getElementById("pwa-install-btn");
+      const iosBanner = document.getElementById("ios-banner");
+
+      // Android / Chrome
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = "block";
+      });
+
+      installBtn.addEventListener("click", async () => {
+        installBtn.style.display = "none";
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log("User install choice:", outcome);
+        deferredPrompt = null;
+      });
+
+      window.addEventListener("appinstalled", () => {
+        console.log("✅ MediLink360 installed");
+        installBtn.style.display = "none";
+      });
+
+      // iOS Safari
+      function isIos() {
+        return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      }
+      function isInStandaloneMode() {
+        return window.navigator.standalone === true;
+      }
+      if (isIos() && !isInStandaloneMode()) {
+        iosBanner.style.display = "block";
+      }
+    </script>
+  </body>
+</html>
