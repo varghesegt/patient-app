@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
    Lazy load pages
 ========================= */
 const Home = lazy(() => import("../pages/home.jsx"));
-const Dashboard = lazy(() => import("../pages/index.jsx")); // Guest dashboard
+const Dashboard = lazy(() => import("../pages/index.jsx"));
 const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
 const Emergency = lazy(() => import("../pages/emergency.jsx"));
 const Profile = lazy(() => import("../pages/profile.jsx"));
@@ -28,7 +28,8 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/" replace />;
+  // Redirect to LOGIN instead of Home when not authenticated
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
 /* =========================
@@ -36,12 +37,15 @@ const PrivateRoute = ({ children }) => {
 ========================= */
 export default function AppRouter() {
   const { isAuthenticated } = useAuth();
-  const isGuest = localStorage.getItem("guest") === "true";
 
   return (
     <Routes>
-      {/* Default Landing */}
-      <Route path="/" element={<Home />} />
+      /* Default Landing */
+<Route
+  path="/"
+  element={<Home />}
+/>
+
 
       {/* Auth Routes */}
       <Route
@@ -61,14 +65,6 @@ export default function AppRouter() {
       <Route path="/symptoms" element={<Symptoms />} />
       <Route path="/emergency" element={<Emergency />} />
       <Route path="/hospital" element={<Hospital />} />
-
-      {/* Guest Dashboard */}
-      <Route
-        path="/index"
-        element={
-          isGuest ? <Dashboard /> : <Navigate to="/" replace />
-        }
-      />
 
       {/* Protected Routes */}
       <Route
