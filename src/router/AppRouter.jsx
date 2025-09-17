@@ -40,11 +40,12 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Default Landing */}
-      <Route
-        path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />}
-      />
+      /* Default Landing */
+<Route
+  path="/"
+  element={<Home />}
+/>
+
 
       {/* Auth Routes */}
       <Route

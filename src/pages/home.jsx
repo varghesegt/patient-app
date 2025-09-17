@@ -9,7 +9,7 @@ import {
   Hospital,
 } from "lucide-react";
 
-// 🌐 Supported Languages
+// Supported Languages
 const LANGS = {
   en: {
     appName: "MediLink360",
@@ -47,14 +47,14 @@ const LANGS = {
     footer: "Built for Better Health Access",
     chooseLang: "Choose Your Language",
   },
-  // 🟢 Extend Hindi & Tamil in the same format if needed
+  //Extend Hindi & Tamil in the same format if needed
 };
 
 export default function Home() {
   const navigate = useNavigate();
   const [lang, setLang] = useState(localStorage.getItem("lang") || null);
 
-  // 🌍 Auto-detect browser language (first visit only)
+  // Auto-detect browser language (first visit only)
   useEffect(() => {
     if (!lang) {
       const browserLang = navigator.language.slice(0, 2);
@@ -66,13 +66,13 @@ export default function Home() {
     }
   }, [lang]);
 
-  // 🌐 Handle language selection
+  // Handle language selection
   const chooseLanguage = (code) => {
     setLang(code);
     localStorage.setItem("lang", code);
   };
 
-  // 👤 Handle guest mode navigation
+  // Handle guest mode navigation
   const enableGuestAndNavigate = (path) => {
     localStorage.setItem("guest", "true");
     navigate(path);
@@ -82,7 +82,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
-      {/* 🌐 Language Selection Modal */}
+      {/*Language Selection Modal */}
       <AnimatePresence>
         {!lang && (
           <motion.div
@@ -128,7 +128,7 @@ export default function Home() {
 
       {lang && (
         <>
-          {/* 🌐 Floating Language Switcher */}
+          {/*Floating Language Switcher */}
           <div className="absolute top-6 right-6 z-40 flex items-center gap-2 bg-white border rounded-lg shadow-md px-3 py-1 hover:shadow-lg transition">
             <span>🌐</span>
             <select
@@ -148,7 +148,7 @@ export default function Home() {
             </select>
           </div>
 
-          {/* 🎯 Hero Section */}
+          {/*Hero Section */}
           <section className="flex-1 flex flex-col justify-center items-center text-center px-6 py-24 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-200/40 to-sky-100/20 blur-3xl -z-10" />
 
@@ -170,7 +170,7 @@ export default function Home() {
               {t.tagline}
             </motion.p>
 
-            {/* 🚀 CTA Buttons */}
+            {/*CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -199,7 +199,7 @@ export default function Home() {
               </button>
             </motion.div>
 
-            {/* 🆕 Guest Quick Access */}
+            {/*Guest Quick Access */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -243,7 +243,7 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/* 🔻 Footer */}
+          {/*Footer */}
           <footer className="bg-sky-700 text-white py-6 text-center text-sm">
             <p>
               © {new Date().getFullYear()} {t.appName}.{" "}
