@@ -64,7 +64,7 @@ export default function PatientProfile() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 relative">
+    <div className="max-w-6xl mx-auto p-6 relative bg-gradient-to-b from-white to-sky-50 rounded-2xl shadow-lg">
       {/* ✅ Toast */}
       <AnimatePresence>
         {toast && (
@@ -72,7 +72,7 @@ export default function PatientProfile() {
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
-            className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"
+            className="fixed top-6 right-6 bg-emerald-500 text-white px-4 py-2 rounded-lg shadow-xl flex items-center gap-2"
           >
             <CheckCircle2 size={18} />
             {toast}
@@ -81,7 +81,7 @@ export default function PatientProfile() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-6">
           <div className="relative group">
             <img
@@ -90,10 +90,10 @@ export default function PatientProfile() {
                 "https://ui-avatars.com/api/?name=John+Doe&background=0ea5e9&color=fff&size=128"
               }
               alt="Profile"
-              className="w-24 h-24 rounded-full object-cover shadow-md border-4 border-sky-200 transition group-hover:scale-105"
+              className="w-28 h-28 rounded-full object-cover shadow-lg border-4 border-white ring-4 ring-sky-100 transition group-hover:scale-105"
             />
             {editMode && (
-              <label className="absolute bottom-0 right-0 bg-sky-600 p-2 rounded-full cursor-pointer hover:bg-sky-700 transition">
+              <label className="absolute bottom-0 right-0 bg-sky-600 p-2 rounded-full cursor-pointer hover:bg-sky-700 transition shadow-md">
                 <Camera size={16} className="text-white" />
                 <input
                   type="file"
@@ -111,10 +111,10 @@ export default function PatientProfile() {
                 name="name"
                 value={profile.name}
                 onChange={handleChange}
-                className="text-3xl font-bold border-b p-2"
+                className="text-3xl font-bold border-b border-sky-300 p-2 outline-none focus:border-sky-500"
               />
             ) : (
-              <h2 className="text-3xl font-bold tracking-tight">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
                 {profile.name}
               </h2>
             )}
@@ -123,7 +123,7 @@ export default function PatientProfile() {
         </div>
         <button
           onClick={editMode ? saveProfile : () => setEditMode(true)}
-          className="flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-xl hover:bg-sky-700 transition"
+          className="flex items-center gap-2 bg-sky-600 text-white px-5 py-2.5 rounded-xl hover:bg-sky-700 shadow-md transition"
         >
           {editMode ? <Save size={18} /> : <Edit2 size={18} />}
           {editMode ? "Save" : "Edit"}
@@ -131,13 +131,13 @@ export default function PatientProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="relative flex gap-8 border-b mb-6">
+      <div className="relative flex gap-8 border-b border-gray-200 mb-8">
         {["overview", "medical", "reports"].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`relative px-4 py-2 font-medium transition ${
-              tab === t ? "text-sky-600" : "text-gray-500"
+            className={`relative pb-3 text-lg font-medium transition ${
+              tab === t ? "text-sky-600" : "text-gray-500 hover:text-sky-500"
             }`}
           >
             {t === "overview"
@@ -148,7 +148,7 @@ export default function PatientProfile() {
             {tab === t && (
               <motion.div
                 layoutId="underline"
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-600 rounded"
               />
             )}
           </button>
@@ -166,8 +166,10 @@ export default function PatientProfile() {
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {/* Contact Info */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-md space-y-3">
-              <h3 className="font-semibold text-lg mb-2">Contact</h3>
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 space-y-3">
+              <h3 className="font-semibold text-lg mb-2 text-sky-700">
+                Contact Info
+              </h3>
               <div className="flex items-center gap-2">
                 <Phone size={18} className="text-sky-600" />
                 {editMode ? (
@@ -176,7 +178,7 @@ export default function PatientProfile() {
                     name="phone"
                     value={profile.phone}
                     onChange={handleChange}
-                    className="border rounded p-1 w-full"
+                    className="border rounded p-1 w-full focus:border-sky-400"
                   />
                 ) : (
                   <p>{profile.phone}</p>
@@ -190,7 +192,7 @@ export default function PatientProfile() {
                     name="email"
                     value={profile.email}
                     onChange={handleChange}
-                    className="border rounded p-1 w-full"
+                    className="border rounded p-1 w-full focus:border-sky-400"
                   />
                 ) : (
                   <p>{profile.email}</p>
@@ -199,20 +201,24 @@ export default function PatientProfile() {
             </div>
 
             {/* Stats */}
-            <div className="bg-sky-50 dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+            <div className="bg-gradient-to-br from-sky-50 to-white p-6 rounded-xl shadow flex flex-col items-center justify-center">
               <Activity className="text-sky-600 mb-2" size={28} />
-              <p className="font-medium">BMI</p>
-              <p className="text-lg font-bold">{profile.bmi}</p>
+              <p className="font-medium text-gray-600">BMI</p>
+              <p className="text-xl font-bold text-gray-900">{profile.bmi}</p>
             </div>
-            <div className="bg-sky-50 dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-center justify-center">
+            <div className="bg-gradient-to-br from-sky-50 to-white p-6 rounded-xl shadow flex flex-col items-center justify-center">
               <Calendar className="text-sky-600 mb-2" size={28} />
-              <p className="font-medium">Last Checkup</p>
-              <p className="text-lg font-bold">{profile.lastCheckup}</p>
+              <p className="font-medium text-gray-600">Last Checkup</p>
+              <p className="text-xl font-bold text-gray-900">
+                {profile.lastCheckup}
+              </p>
             </div>
-            <div className="bg-sky-50 dark:bg-gray-800 p-6 rounded-xl shadow-md flex flex-col items-center justify-center md:col-span-3">
-              <Droplet className="text-sky-600 mb-2" size={28} />
-              <p className="font-medium">Blood Group</p>
-              <p className="text-lg font-bold">{profile.bloodGroup}</p>
+            <div className="bg-gradient-to-br from-rose-50 to-white p-6 rounded-xl shadow flex flex-col items-center justify-center md:col-span-3">
+              <Droplet className="text-rose-600 mb-2" size={28} />
+              <p className="font-medium text-gray-600">Blood Group</p>
+              <p className="text-xl font-bold text-gray-900">
+                {profile.bloodGroup}
+              </p>
             </div>
           </motion.div>
         )}
@@ -226,15 +232,15 @@ export default function PatientProfile() {
             className="grid md:grid-cols-2 gap-6"
           >
             {/* Conditions */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 text-sky-700">
                 <Stethoscope size={18} /> Conditions
               </h4>
               <ul className="space-y-2">
                 {profile.conditions.map((c, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                    className="flex items-center justify-between bg-sky-50 px-3 py-2 rounded-lg"
                   >
                     <span>{c}</span>
                     {editMode && (
@@ -262,7 +268,7 @@ export default function PatientProfile() {
                     value={newCondition}
                     onChange={(e) => setNewCondition(e.target.value)}
                     placeholder="Add condition"
-                    className="border rounded p-2 flex-grow"
+                    className="border rounded p-2 flex-grow focus:border-sky-400"
                   />
                   <button
                     type="button"
@@ -284,15 +290,15 @@ export default function PatientProfile() {
             </div>
 
             {/* Allergies */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 text-sky-700">
                 <FileText size={18} /> Allergies
               </h4>
               <ul className="space-y-2">
                 {profile.allergies.map((a, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                    className="flex items-center justify-between bg-sky-50 px-3 py-2 rounded-lg"
                   >
                     <span>{a}</span>
                     {editMode && (
@@ -320,7 +326,7 @@ export default function PatientProfile() {
                     value={newAllergy}
                     onChange={(e) => setNewAllergy(e.target.value)}
                     placeholder="Add allergy"
-                    className="border rounded p-2 flex-grow"
+                    className="border rounded p-2 flex-grow focus:border-sky-400"
                   />
                   <button
                     type="button"
@@ -352,15 +358,15 @@ export default function PatientProfile() {
             className="grid md:grid-cols-2 gap-6"
           >
             {/* Prescriptions */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 text-sky-700">
                 <Pill size={18} /> Prescriptions
               </h4>
               <ul className="space-y-2">
                 {profile.prescriptions.map((p, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                    className="flex items-center justify-between bg-sky-50 px-3 py-2 rounded-lg"
                   >
                     <span>{p}</span>
                   </li>
@@ -373,7 +379,7 @@ export default function PatientProfile() {
                     value={newPrescription}
                     onChange={(e) => setNewPrescription(e.target.value)}
                     placeholder="Add prescription"
-                    className="border rounded p-2 flex-grow"
+                    className="border rounded p-2 flex-grow focus:border-sky-400"
                   />
                   <button
                     type="button"
@@ -398,15 +404,15 @@ export default function PatientProfile() {
             </div>
 
             {/* Lab Reports */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
+            <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+              <h4 className="font-semibold mb-3 flex items-center gap-2 text-sky-700">
                 <FileBarChart size={18} /> Lab Reports
               </h4>
               <ul className="space-y-2">
                 {profile.labReports.map((r, i) => (
                   <li
                     key={i}
-                    className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                    className="flex items-center justify-between bg-sky-50 px-3 py-2 rounded-lg"
                   >
                     <span>{r}</span>
                   </li>
