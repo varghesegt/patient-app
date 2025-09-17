@@ -190,13 +190,6 @@ export default function Home() {
               >
                 {t.register}
               </Link>
-
-              <button
-                onClick={() => enableGuestAndNavigate("/dashboard")}
-                className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-yellow-500 text-white hover:bg-yellow-600 hover:scale-105 transition"
-              >
-                {t.guest}
-              </button>
             </motion.div>
 
             {/*Guest Quick Access */}
