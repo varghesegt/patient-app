@@ -2,21 +2,21 @@ import React, { lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-// Lazy load pages
-const Home = lazy(() => import("../pages/home"));
-const Dashboard = lazy(() => import("../pages/index"));
-const Symptoms = lazy(() => import("../pages/symptoms"));
-const Emergency = lazy(() => import("../pages/emergency"));
-const Profile = lazy(() => import("../pages/profile"));
-const Register = lazy(() => import("../pages/register"));
-const Login = lazy(() => import("../pages/login"));
-const Hospital = lazy(() => import("../pages/hospital")); // <-- Add this
+/* =========================
+   Lazy load pages
+========================= */
+const Home = lazy(() => import("../pages/home.jsx"));
+const Dashboard = lazy(() => import("../pages/index.jsx"));
+const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
+const Emergency = lazy(() => import("../pages/emergency.jsx"));
+const Profile = lazy(() => import("../pages/profile.jsx"));
+const Register = lazy(() => import("../pages/register.jsx"));
+const Login = lazy(() => import("../pages/login.jsx"));
+const Hospital = lazy(() => import("../pages/hospital.jsx"));
 
 /* =========================
    Route Guards
 ========================= */
-
-// Protect routes for logged-in users
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -34,7 +34,6 @@ const PrivateRoute = ({ children }) => {
 /* =========================
    App Router
 ========================= */
-
 export default function AppRouter() {
   const { isAuthenticated } = useAuth();
 
@@ -43,15 +42,21 @@ export default function AppRouter() {
       {/* Public Routes */}
       <Route
         path="/"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />}
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />
+        }
       />
       <Route
         path="/login"
-        element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />}
+        element={
+          !isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />
+        }
       />
       <Route
         path="/register"
-        element={!isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />}
+        element={
+          !isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />
+        }
       />
 
       {/* Dashboard */}
