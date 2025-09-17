@@ -4,9 +4,9 @@ import { useAuth } from "../contexts/AuthContext";
 
 // Lazy load pages
 const Home = lazy(() => import("../pages/home"));
-const Dashboard = lazy(() => import("../pages/Index"));
-const Symptoms = lazy(() => import("../pages/Symptoms"));
-const Emergency = lazy(() => import("../pages/Emergency"));
+const Dashboard = lazy(() => import("../pages/index"));
+const Symptoms = lazy(() => import("../pages/symptoms"));
+const Emergency = lazy(() => import("../pages/emergency"));
 const Profile = lazy(() => import("../pages/profile"));
 const Register = lazy(() => import("../pages/register"));
 const Login = lazy(() => import("../pages/login"));
