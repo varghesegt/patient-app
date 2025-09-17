@@ -23,7 +23,6 @@ const LANGS = {
     about: "About",
     contact: "Contact",
     login: "Login",
-    guest: "Guest",
     hospital: "Hospital",
     symptoms: "Symptoms",
     emergency: "Emergency",
@@ -35,7 +34,6 @@ const LANGS = {
     about: "हमारे बारे में",
     contact: "संपर्क करें",
     login: "लॉगिन",
-    guest: "अतिथि",
     hospital: "अस्पताल",
     symptoms: "लक्षण",
     emergency: "आपातकालीन",
@@ -47,7 +45,6 @@ const LANGS = {
     about: "எங்களைப்பற்றி",
     contact: "தொடர்பு",
     login: "உள்நுழைய",
-    guest: "விருந்தினர்",
     hospital: "மருத்துவமனை",
     symptoms: "அறிகுறிகள்",
     emergency: "அவசரம்",
@@ -58,7 +55,7 @@ const LANGS = {
 
 export default function Navbar() {
   const { pathname } = useLocation();
-  const { isAuthenticated, role, logout, guestLogin } = useAuth();
+  const { isAuthenticated, role, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [lang, setLang] = useState("en");
 
@@ -70,13 +67,12 @@ export default function Navbar() {
 
   const t = LANGS[lang];
 
-  // Define navigation items
+  // Navigation items
   const navItemsPublic = [
     { label: t.home, path: "/", icon: <Home size={18} /> },
     { label: t.about, path: "/about", icon: <Info size={18} /> },
     { label: t.contact, path: "/contact", icon: <Phone size={18} /> },
     { label: t.login, path: "/login", icon: <LogIn size={18} /> },
-    { label: t.guest, path: "#", onClick: guestLogin, icon: <UserPlus size={18} /> },
   ];
 
   const navItemsUser = [
