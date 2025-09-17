@@ -79,22 +79,11 @@ export default function Navbar() {
     { label: t.hospital, path: "/hospital", icon: <MapPin size={18} /> },
     { label: t.symptoms, path: "/symptoms", icon: <Heart size={18} /> },
     { label: t.emergency, path: "/emergency", icon: <Shield size={18} /> },
-    { label: t.profile, path: "/profile", icon: <User size={18} /> },
+    { label: t.profile, path: "/profile", icon: <User size={18} /> }, // Added Profile
     { label: t.logout, path: "#", onClick: logout, icon: <User size={18} /> },
   ];
 
-  const navItemsGuest = [
-    { label: t.hospital, path: "/hospital", icon: <MapPin size={18} /> },
-    { label: t.symptoms, path: "/symptoms", icon: <Heart size={18} /> },
-    { label: t.emergency, path: "/emergency", icon: <Shield size={18} /> },
-    { label: t.logout, path: "#", onClick: logout, icon: <User size={18} /> },
-  ];
-
-  const navItems = isAuthenticated
-    ? role === "user"
-      ? navItemsUser
-      : navItemsGuest
-    : navItemsPublic;
+  const navItems = isAuthenticated && role === "user" ? navItemsUser : navItemsPublic;
 
   return (
     <nav className="bg-sky-600 text-white shadow-lg sticky top-0 z-50">
