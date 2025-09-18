@@ -1,24 +1,27 @@
+// src/router/AppRouter.jsx
 import React, { lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-/* =========================
-   Lazy load pages
-========================= */
+// Public pages
 const Home = lazy(() => import("../pages/home.jsx"));
-const Dashboard = lazy(() => import("../pages/index.jsx"));
-const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
-const Emergency = lazy(() => import("../pages/emergency.jsx"));
-const Profile = lazy(() => import("../pages/profile.jsx"));
-const Register = lazy(() => import("../pages/register.jsx"));
 const Login = lazy(() => import("../pages/login.jsx"));
+const Register = lazy(() => import("../pages/register.jsx"));
+const Emergency = lazy(() => import("../pages/emergency.jsx"));
 const Hospital = lazy(() => import("../pages/hospital.jsx"));
+const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
 
-/* =========================
-   Route Guards
-========================= */
+// Private pages
+const Dashboard = lazy(() => import("../pages/index.jsx"));
+const Profile = lazy(() => import("../pages/profile.jsx"));
+const EmergencyOne = lazy(() => import("../pages/emergencyone.jsx"));
+const HospitalOne = lazy(() => import("../pages/hospitalone.jsx"));
+const SymptomsOne = lazy(() => import("../pages/symptomsone.jsx"));
+
+// PrivateRoute Guard
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -28,45 +31,40 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  // Redirect to LOGIN instead of Home when not authenticated
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
+  );
 };
 
-/* =========================
-   App Router
-========================= */
 export default function AppRouter() {
   const { isAuthenticated } = useAuth();
 
   return (
     <Routes>
-      /* Default Landing */
-<Route
-  path="/"
-  element={<Home />}
-/>
-
+      <Route path="/" element={<Home />} />
 
       {/* Auth Routes */}
       <Route
         path="/login"
         element={
-          !isAuthenticated ? <Login /> : <Navigate to="/dashboard" replace />
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
         }
       />
       <Route
         path="/register"
         element={
-          !isAuthenticated ? <Register /> : <Navigate to="/dashboard" replace />
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Register />
         }
       />
 
-      {/* Publicly Accessible Routes */}
-      <Route path="/symptoms" element={<Symptoms />} />
+      {/* Public Pages */}
       <Route path="/emergency" element={<Emergency />} />
       <Route path="/hospital" element={<Hospital />} />
+      <Route path="/symptoms" element={<Symptoms />} />
 
-      {/* Protected Routes */}
+      {/* Private Pages */}
       <Route
         path="/dashboard"
         element={
@@ -83,8 +81,32 @@ export default function AppRouter() {
           </PrivateRoute>
         }
       />
+      <Route
+        path="/emergencyone"
+        element={
+          <PrivateRoute>
+            <EmergencyOne />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/hospitalone"
+        element={
+          <PrivateRoute>
+            <HospitalOne />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/symptomsone"
+        element={
+          <PrivateRoute>
+            <SymptomsOne />
+          </PrivateRoute>
+        }
+      />
 
-      {/* 404 Fallback */}
+      {/* 404 */}
       <Route
         path="*"
         element={
