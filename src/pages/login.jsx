@@ -146,7 +146,7 @@ export default function Login() {
             alt="Google"
             className="w-5 h-5"
           />
-          {loading ? "Connecting..." : `Continue as ${form.role} with Google`}
+          {loading ? "Connecting..." : `Continue with Google`}
         </button>
       </motion.div>
     </div>
