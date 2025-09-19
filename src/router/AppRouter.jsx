@@ -9,6 +9,10 @@ const Register = lazy(() => import("../pages/register.jsx"));
 const Emergency = lazy(() => import("../pages/emergency.jsx"));
 const Hospital = lazy(() => import("../pages/hospital.jsx"));
 const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
+const FirstAid = lazy(() => import("../pages/firstaid.jsx"));
+const ConsultDoctor = lazy(() => import("../pages/consultdoctor.jsx"));
+const About = lazy(() => import("../pages/about.jsx")); // ✅ About page
+const Contact = lazy(() => import("../pages/contact.jsx")); // ✅ Contact page
 
 // Private Pages
 const Dashboard = lazy(() => import("../pages/index.jsx"));
@@ -16,6 +20,8 @@ const Profile = lazy(() => import("../pages/profile.jsx"));
 const EmergencyOne = lazy(() => import("../pages/emergencyone.jsx"));
 const HospitalOne = lazy(() => import("../pages/hospitalone.jsx"));
 const SymptomsOne = lazy(() => import("../pages/symptomsone.jsx"));
+const FirstAidOne = lazy(() => import("../pages/firstaidone.jsx"));
+const ConsultDoctorOne = lazy(() => import("../pages/consultdoctorone.jsx"));
 
 // Guarded Route
 const PrivateRoute = ({ children }) => {
@@ -55,6 +61,10 @@ export default function AppRouter() {
       <Route path="/emergency" element={<Emergency />} />
       <Route path="/hospital" element={<Hospital />} />
       <Route path="/symptoms" element={<Symptoms />} />
+      <Route path="/firstaid" element={<FirstAid />} />
+      <Route path="/consultdoctor" element={<ConsultDoctor />} />
+      <Route path="/about" element={<About />} /> {/* ✅ About */}
+      <Route path="/contact" element={<Contact />} /> {/* ✅ Contact */}
 
       {/* Private Routes */}
       <Route
@@ -94,6 +104,22 @@ export default function AppRouter() {
         element={
           <PrivateRoute>
             <SymptomsOne />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/firstaidone"
+        element={
+          <PrivateRoute>
+            <FirstAidOne />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/consultdoctorone"
+        element={
+          <PrivateRoute>
+            <ConsultDoctorOne />
           </PrivateRoute>
         }
       />

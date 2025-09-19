@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-sky-50 relative overflow-hidden">
-      {/* Animated floating blobs */}
+      {/* Floating blobs */}
       <motion.div
         animate={{ y: [0, 20, 0], x: [0, 15, 0] }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -97,19 +97,19 @@ export default function Home() {
               title: "Nearby Hospitals",
               desc: "Find closest hospitals with live availability.",
               icon: <MapPin className="text-green-500" />,
-              link: "/hospitals",
+              link: "/hospital",
             },
             {
               title: "First Aid Guide",
               desc: "Step-by-step emergency instructions.",
               icon: <HeartPulse className="text-orange-500" />,
-              link: "/first-aid",
+              link: "/firstaid",
             },
             {
               title: "Consult a Doctor",
               desc: "Instantly connect with verified doctors.",
               icon: <Stethoscope className="text-purple-500" />,
-              link: "/consult",
+              link: "/consultdoctor",
             },
           ].map((card, i) => (
             <motion.div
