@@ -1,23 +1,19 @@
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
-/* =========================
-   Custom Hook
-========================= */
+// Custom Hook
 export const useAuth = () => useContext(AuthContext);
 
-/* =========================
-   AuthProvider
-========================= */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  /* Restore user from localStorage */
+  /* =========================
+     Restore User on App Load
+  ========================= */
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -31,27 +27,37 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  /* LOGIN */
+  /* =========================
+     LOGIN
+  ========================= */
   const login = async ({ email, password, role, redirectTo }) => {
-    // Fake API call
-    const loggedUser = { email, role };
-    setUser(loggedUser);
-    localStorage.setItem("user", JSON.stringify(loggedUser));
+    // TODO: Replace with API call
+    if (email && password) {
+      const loggedUser = { email, role: role || "user" };
+      setUser(loggedUser);
+      localStorage.setItem("user", JSON.stringify(loggedUser));
 
-    // Redirect to intended page or dashboard
-    navigate(redirectTo || "/dashboard", { replace: true });
+      navigate(redirectTo || "/dashboard", { replace: true });
+    } else {
+      alert("Invalid credentials!");
+    }
   };
 
-  /* REGISTER */
+  /* =========================
+     REGISTER
+  ========================= */
   const register = async ({ email, password, role, redirectTo }) => {
-    const newUser = { email, role };
+    // TODO: Replace with API call
+    const newUser = { email, role: role || "user" };
     setUser(newUser);
     localStorage.setItem("user", JSON.stringify(newUser));
 
     navigate(redirectTo || "/dashboard", { replace: true });
   };
 
-  /* LOGOUT */
+  /* =========================
+     LOGOUT
+  ========================= */
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -59,7 +65,9 @@ export const AuthProvider = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
-  /* GUEST LOGIN */
+  /* =========================
+     GUEST LOGIN
+  ========================= */
   const guestLogin = () => {
     const guestUser = { email: "guest@demo.com", role: "guest" };
     setUser(guestUser);
