@@ -141,13 +141,6 @@ export default function Navbar() {
               )}
             </li>
           ))}
-
-          {/* ✅ Show only real user email */}
-          {isRealUser && (
-            <li className="ml-4 text-xs sm:text-sm font-medium italic text-yellow-200 truncate max-w-[160px]">
-              {user.email}
-            </li>
-          )}
         </ul>
 
         {/* Mobile Menu Toggle */}
