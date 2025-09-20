@@ -1,3 +1,4 @@
+// Login.jsx
 import React, { useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -5,7 +6,7 @@ import { Mail, Lock, Loader2, LogIn, Shield } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth(); // only normal + google login
+  const { login } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -13,6 +14,7 @@ export default function Login() {
 
   const [form, setForm] = useState({ email: "", password: "", role: "patient" });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -24,12 +26,21 @@ export default function Login() {
     setLoading(false);
   };
 
-  // ✅ Dummy Google login
-  const handleGoogle = () => {
-    setLoading(true);
-    setTimeout(() => {
-      navigate("/dashboard", { replace: true });
-    }, 1200); // fake delay
+  // ✅ Advanced Dummy Google login
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    // simulate popup + auth delay
+    setTimeout(async () => {
+      await login({
+        email: "demo.google.user@gmail.com",
+        name: "Demo Google User",
+        role: "patient",
+        provider: "google",
+        redirectTo,
+      });
+      setGoogleLoading(false);
+      navigate(redirectTo, { replace: true });
+    }, 1500);
   };
 
   return (
@@ -138,15 +149,24 @@ export default function Login() {
         {/* Dummy Google Login */}
         <button
           onClick={handleGoogle}
-          disabled={loading}
+          disabled={googleLoading}
           className="w-full flex items-center justify-center gap-2 py-2.5 border rounded-lg hover:bg-gray-50 transition"
         >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />
-          {loading ? "Connecting..." : `Continue with Google`}
+          {googleLoading ? (
+            <>
+              <Loader2 className="animate-spin text-sky-600" size={18} />
+              Connecting to Google...
+            </>
+          ) : (
+            <>
+              <img
+                src="https://www.svgrepo.com/show/475656/google-color.svg"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              Continue with Google
+            </>
+          )}
         </button>
       </motion.div>
     </div>

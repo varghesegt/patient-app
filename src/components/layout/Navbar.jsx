@@ -13,7 +13,6 @@ import {
   Info,
   Phone,
   LogIn,
-  UserPlus,
   LogOut,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,33 +86,32 @@ export default function Navbar() {
 
   /* Authenticated User Navigation */
   const navItemsUser = [
-        { label: t.dashboard, path: "/dashboard", icon: <Home size={18} /> },
+    { label: t.dashboard, path: "/dashboard", icon: <Home size={18} /> },
     { label: t.hospital, path: "/hospital", icon: <MapPin size={18} /> },
     { label: t.symptoms, path: "/symptoms", icon: <Heart size={18} /> },
     { label: t.emergency, path: "/emergency", icon: <Shield size={18} /> },
-   
     { label: t.profile, path: "/profile", icon: <User size={18} /> },
     { label: t.logout, path: "#", onClick: logout, icon: <LogOut size={18} /> },
   ];
 
   const navItems = isAuthenticated ? navItemsUser : navItemsPublic;
 
-  // ✅ filter guest/demo emails
-  const isRealUser =
-    isAuthenticated &&
-    user?.email &&
-    !user.email.includes("guest") &&
-    !user.email.includes("demo");
-
   return (
     <nav className="bg-gradient-to-r from-sky-600 via-sky-700 to-sky-800 text-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-3">
-        {/* Logo */}
+        {/* Logo + App Name */}
         <Link
           to="/"
-          className="font-bold text-2xl sm:text-3xl tracking-wide hover:text-yellow-300 transition-colors duration-300"
+          className="flex items-center gap-2 font-bold tracking-wide hover:text-yellow-300 transition-colors duration-300"
         >
-          MediLink360
+          <img
+            src="/logo.png"
+            alt="MediLink360 Logo"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg shadow-md"
+          />
+          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap">
+            MediLink360
+          </span>
         </Link>
 
         {/* Desktop Menu */}
@@ -125,7 +123,7 @@ export default function Navbar() {
                   onClick={onClick}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-yellow-200 hover:text-sky-800 transition duration-300 shadow-sm"
                 >
-                  {icon} <span className="hidden lg:inline">{label}</span>
+                  {icon} <span>{label}</span>
                 </button>
               ) : (
                 <Link
@@ -136,7 +134,7 @@ export default function Navbar() {
                       : ""
                   }`}
                 >
-                  {icon} <span className="hidden lg:inline">{label}</span>
+                  {icon} <span>{label}</span>
                 </Link>
               )}
             </li>
@@ -162,7 +160,7 @@ export default function Navbar() {
             transition={{ duration: 0.35 }}
             className="md:hidden bg-sky-700/95 px-6 backdrop-blur-md overflow-hidden rounded-b-2xl shadow-lg"
           >
-            <ul className="flex flex-col gap-2 py-4">
+            <ul className="flex flex-col gap-2 py-4 max-h-[75vh] overflow-y-auto">
               {navItems.map(({ label, path, onClick, icon }) => (
                 <li key={label}>
                   {onClick ? (
@@ -171,7 +169,7 @@ export default function Navbar() {
                         onClick();
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-yellow-200 hover:text-sky-800 transition duration-300 shadow"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-yellow-200 hover:text-sky-800 transition duration-300 shadow"
                     >
                       {icon} {label}
                     </button>
@@ -179,7 +177,7 @@ export default function Navbar() {
                     <Link
                       to={path}
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-yellow-200 hover:text-sky-800 transition duration-300 shadow ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-yellow-200 hover:text-sky-800 transition duration-300 shadow ${
                         pathname === path
                           ? "font-semibold underline decoration-yellow-300"
                           : ""
@@ -190,7 +188,6 @@ export default function Navbar() {
                   )}
                 </li>
               ))}
-
             </ul>
           </motion.div>
         )}

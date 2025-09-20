@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
       try {
         setUser(JSON.parse(storedUser));
       } catch (err) {
-        console.error("Error parsing stored user:", err);
+        console.error("❌ Error parsing stored user:", err);
         localStorage.removeItem("user");
       }
     }
@@ -28,31 +28,70 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /* =========================
-     LOGIN
+     Generic Save + Redirect
   ========================= */
-  const login = async ({ email, password, role, redirectTo }) => {
-    // TODO: Replace with API call
-    if (email && password) {
-      const loggedUser = { email, role: role || "user" };
-      setUser(loggedUser);
-      localStorage.setItem("user", JSON.stringify(loggedUser));
-
-      navigate(redirectTo || "/dashboard", { replace: true });
-    } else {
-      alert("Invalid credentials!");
-    }
+  const saveUser = (newUser, redirectTo = "/dashboard") => {
+    setUser(newUser);
+    localStorage.setItem("user", JSON.stringify(newUser));
+    navigate(redirectTo, { replace: true });
   };
 
   /* =========================
-     REGISTER
+     LOGIN (Email/Password or Social)
+  ========================= */
+  const login = async ({ email, password, role, name, provider, redirectTo }) => {
+    let loggedUser;
+
+    // 🔹 Social or Google login (dummy)
+    if (provider) {
+      loggedUser = {
+        email: email || `${provider}@demo.com`,
+        name: name || `${provider} User`,
+        role: role || "patient",
+        provider,
+      };
+    }
+    // 🔹 Normal email/password login (dummy)
+    else if (email && password) {
+      loggedUser = {
+        email,
+        name: email.split("@")[0],
+        role: role || "patient",
+        provider: "credentials",
+      };
+    }
+    else {
+      alert("⚠️ Invalid credentials!");
+      return;
+    }
+
+    saveUser(loggedUser, redirectTo);
+  };
+
+  /* =========================
+     REGISTER (Dummy)
   ========================= */
   const register = async ({ email, password, role, redirectTo }) => {
-    // TODO: Replace with API call
-    const newUser = { email, role: role || "user" };
-    setUser(newUser);
-    localStorage.setItem("user", JSON.stringify(newUser));
+    const newUser = {
+      email,
+      name: email.split("@")[0],
+      role: role || "patient",
+      provider: "credentials",
+    };
+    saveUser(newUser, redirectTo);
+  };
 
-    navigate(redirectTo || "/dashboard", { replace: true });
+  /* =========================
+     GUEST LOGIN (Dummy)
+  ========================= */
+  const guestLogin = () => {
+    const guestUser = {
+      email: "guest@demo.com",
+      name: "Guest User",
+      role: "guest",
+      provider: "guest",
+    };
+    saveUser(guestUser);
   };
 
   /* =========================
@@ -65,16 +104,6 @@ export const AuthProvider = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
-  /* =========================
-     GUEST LOGIN
-  ========================= */
-  const guestLogin = () => {
-    const guestUser = { email: "guest@demo.com", role: "guest" };
-    setUser(guestUser);
-    localStorage.setItem("user", JSON.stringify(guestUser));
-    navigate("/dashboard", { replace: true });
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -83,8 +112,8 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
-        logout,
         guestLogin,
+        logout,
       }}
     >
       {children}

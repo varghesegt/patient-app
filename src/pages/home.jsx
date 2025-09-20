@@ -46,33 +46,74 @@ const LANGS = {
     ],
     footer: "Built for Better Health Access",
     chooseLang: "Choose Your Language",
+    install: "📲 Install MediLink360",
+    iosTip: "📲 To install MediLink360: Tap Share → Add to Home Screen",
   },
-  //Extend Hindi & Tamil in the same format if needed
 };
 
 export default function Home() {
   const navigate = useNavigate();
   const [lang, setLang] = useState(localStorage.getItem("lang") || null);
 
-  // Auto-detect browser language (first visit only)
+  // PWA states
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [showIosBanner, setShowIosBanner] = useState(false);
+
+  // Detect browser language (first visit only)
   useEffect(() => {
     if (!lang) {
       const browserLang = navigator.language.slice(0, 2);
-      if (LANGS[browserLang]) {
-        setLang(browserLang);
-      } else {
-        setLang("en");
-      }
+      setLang(LANGS[browserLang] ? browserLang : "en");
     }
   }, [lang]);
 
-  // Handle language selection
+  // Install logic
+  useEffect(() => {
+    const isIos = /iphone|ipad|ipod/.test(
+      window.navigator.userAgent.toLowerCase()
+    );
+    const isInStandalone = window.navigator.standalone === true;
+
+    if (isIos && !isInStandalone) {
+      setShowIosBanner(true);
+      setShowInstall(true);
+    }
+
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstall(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+
+    window.addEventListener("appinstalled", () => {
+      console.log("✅ MediLink360 installed");
+      setShowInstall(false);
+      setShowIosBanner(false);
+    });
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      setDeferredPrompt(null);
+      setShowInstall(false);
+    } else if (showIosBanner) {
+      alert(LANGS.en.iosTip);
+    }
+  };
+
+  // Language selection
   const chooseLanguage = (code) => {
     setLang(code);
     localStorage.setItem("lang", code);
   };
 
-  // Handle guest mode navigation
   const enableGuestAndNavigate = (path) => {
     localStorage.setItem("guest", "true");
     navigate(path);
@@ -82,7 +123,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
-      {/*Language Selection Modal */}
+      {/* === iOS Banner === */}
+      <AnimatePresence>
+        {showIosBanner && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-0 inset-x-0 bg-gray-900 text-white py-3 px-4 text-center text-sm z-50"
+          >
+            {t.iosTip}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Language Selection Modal */}
       <AnimatePresence>
         {!lang && (
           <motion.div
@@ -128,7 +183,7 @@ export default function Home() {
 
       {lang && (
         <>
-          {/*Floating Language Switcher */}
+          {/* Floating Language Switcher */}
           <div className="absolute top-6 right-6 z-40 flex items-center gap-2 bg-white border rounded-lg shadow-md px-3 py-1 hover:shadow-lg transition">
             <span>🌐</span>
             <select
@@ -148,7 +203,7 @@ export default function Home() {
             </select>
           </div>
 
-          {/*Hero Section */}
+          {/* Hero Section */}
           <section className="flex-1 flex flex-col justify-center items-center text-center px-6 py-24 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-200/40 to-sky-100/20 blur-3xl -z-10" />
 
@@ -170,7 +225,7 @@ export default function Home() {
               {t.tagline}
             </motion.p>
 
-            {/*CTA Buttons */}
+            {/* CTA Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -192,7 +247,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            {/*Guest Quick Access */}
+            {/* Guest Quick Access */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -236,7 +291,22 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/*Footer */}
+          {/* ✅ Install Button (only on Home) */}
+          <AnimatePresence>
+            {showInstall && (
+              <motion.button
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                onClick={handleInstall}
+                className="fixed bottom-6 right-6 px-5 py-3 bg-sky-600 text-white font-semibold rounded-xl shadow-lg hover:bg-sky-700 hover:scale-105 transition z-50"
+              >
+                {t.install}
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {/* Footer */}
           <footer className="bg-sky-700 text-white py-6 text-center text-sm">
             <p>
               © {new Date().getFullYear()} {t.appName}.{" "}
