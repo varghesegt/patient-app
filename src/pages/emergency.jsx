@@ -1,3 +1,4 @@
+// src/pages/Emergency.jsx
 import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
@@ -23,13 +24,18 @@ export default function Emergency() {
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("sosHistory")) || []
   );
+  const [vibrateSupported, setVibrateSupported] = useState(false);
 
   useEffect(() => {
+    // Detect online/offline
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    // Vibrate support
+    setVibrateSupported("vibrate" in navigator);
 
     return () => {
       window.removeEventListener("online", handleOnline);
@@ -37,12 +43,14 @@ export default function Emergency() {
     };
   }, []);
 
+  // Save SOS request to history (max 5)
   const saveToHistory = (data) => {
-    const newHistory = [data, ...history].slice(0, 5); // keep last 5
+    const newHistory = [data, ...history].slice(0, 5);
     setHistory(newHistory);
     localStorage.setItem("sosHistory", JSON.stringify(newHistory));
   };
 
+  // Main SOS handler
   const handleSOS = async (useLiveLocation) => {
     try {
       setSending(true);
@@ -73,22 +81,23 @@ export default function Emergency() {
       };
 
       if (isOnline) {
+        // Online POST
         await fetch("/api/emergency/sos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(sosData),
         });
       } else {
-        // Offline fallback → SMS link (for mobile devices)
+        // Offline fallback → SMS
         window.location.href = `sms:?body=🚨 EMERGENCY! Location: https://maps.google.com/?q=${latitude},${longitude}`;
       }
 
       saveToHistory(sosData);
 
-      // ✅ Give feedback
+      // Feedback
       setSending(false);
       setSent(true);
-      if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); // vibration pattern
+      vibrateSupported && navigator.vibrate([200, 100, 200]);
       setTimeout(() => setSent(false), 5000);
     } catch (err) {
       console.error("SOS failed:", err);
@@ -97,12 +106,18 @@ export default function Emergency() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 
-                    dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 
-                    p-6 sm:p-10 relative overflow-hidden">
-      
-      {/* Background Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(239,68,68,0.15),transparent_70%)] pointer-events-none"></div>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 sm:p-10 relative overflow-hidden">
+      {/* Animated Background Glows */}
+      <motion.div
+        animate={{ x: [0, 20, 0], y: [0, 15, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-10 left-10 w-60 h-60 bg-red-300 rounded-full blur-3xl opacity-20 pointer-events-none"
+      />
+      <motion.div
+        animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-10 right-10 w-72 h-72 bg-red-400 rounded-full blur-3xl opacity-15 pointer-events-none"
+      />
 
       <div className="max-w-5xl mx-auto relative z-10">
         {/* Header */}
@@ -117,8 +132,8 @@ export default function Emergency() {
             Emergency Help
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-300 text-base sm:text-lg">
-            If you are in <span className="font-semibold text-red-600">immediate danger</span>, press SOS below.  
-            Choose whether to send your <strong>live location</strong> or <strong>enter a custom location</strong>.
+            If you are in <span className="font-semibold text-red-600">immediate danger</span>, press SOS below.
+            Choose live location or custom location.
           </p>
           <div className="flex items-center justify-center mt-2 gap-2">
             {isOnline ? (
@@ -133,29 +148,25 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* SOS Section */}
+        {/* SOS Button */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="mt-10 bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl 
-                     border border-red-200 dark:border-red-800 
-                     p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden"
+          className="mt-10 bg-white/90 dark:bg-gray-900/80 backdrop-blur-xl border border-red-200 dark:border-red-800 p-8 rounded-2xl shadow-2xl text-center relative overflow-hidden"
         >
           <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Immediate SOS
           </h3>
 
           <div className="flex flex-col items-center gap-6">
-            {/* Advanced SOS Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setModalOpen(true)}
               disabled={sending}
-              className={`relative w-40 h-40 flex items-center justify-center rounded-full 
-                          font-bold text-2xl uppercase tracking-wide 
-                          ${sending ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"} 
-                          text-white shadow-2xl transition`}
+              className={`relative w-40 h-40 flex items-center justify-center rounded-full font-bold text-2xl uppercase tracking-wide ${
+                sending ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"
+              } text-white shadow-2xl transition`}
             >
               {sending ? (
                 <Loader2 className="animate-spin w-10 h-10" />
@@ -169,22 +180,17 @@ export default function Emergency() {
               )}
             </motion.button>
 
-            {/* Status Message */}
-            {sending && <p className="text-sm text-gray-600 dark:text-gray-400">Sending location…</p>}
-            {sent && (
-              <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
-                SOS triggered ✅
-              </p>
-            )}
             {!sending && !sent && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Press SOS to trigger instant emergency response.
               </p>
             )}
+            {sending && <p className="text-sm text-gray-600 dark:text-gray-400">Sending location…</p>}
+            {sent && <p className="text-sm text-green-600 dark:text-green-400 font-semibold">SOS triggered ✅</p>}
           </div>
         </motion.div>
 
-        {/* 🔴 Location Mode Modal */}
+        {/* Modal for Location Selection */}
         <AnimatePresence>
           {modalOpen && (
             <motion.div
@@ -242,14 +248,12 @@ export default function Emergency() {
           )}
         </AnimatePresence>
 
-        {/* Offline SMS */}
+        {/* Offline Fallback */}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg 
-                     border border-gray-200 dark:border-gray-700 
-                     p-6 rounded-2xl shadow-md"
+          className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 p-6 rounded-2xl shadow-md"
         >
           <OfflineSMS />
         </motion.div>
@@ -267,7 +271,10 @@ export default function Emergency() {
             </h4>
             <ul className="space-y-2 text-sm">
               {history.map((h, i) => (
-                <li key={i} className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300">
+                <li
+                  key={i}
+                  className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300"
+                >
                   <span>
                     {new Date(h.timestamp).toLocaleTimeString()} - {h.status}
                   </span>
@@ -285,7 +292,7 @@ export default function Emergency() {
           </motion.div>
         )}
 
-        {/* Extra Emergency Options */}
+        {/* Additional Emergency Options */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -309,7 +316,7 @@ export default function Emergency() {
             {
               icon: MapPin,
               title: "Location Share",
-              desc: "Manually send your live location to responders.",
+              desc: "Share your location manually to responders.",
               color: "text-purple-500",
               action: () => navigator.share && navigator.share({ title: "My Location", url: window.location.href }),
             },
@@ -324,14 +331,11 @@ export default function Emergency() {
               key={i}
               whileHover={{ scale: 1.05 }}
               onClick={card.action}
-              className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl 
-                         shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2"
+              className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2"
             >
               <div className="flex items-center gap-3">
                 <card.icon className={`${card.color}`} size={24} />
-                <h4 className="font-semibold text-gray-800 dark:text-gray-200">
-                  {card.title}
-                </h4>
+                <h4 className="font-semibold text-gray-800 dark:text-gray-200">{card.title}</h4>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">{card.desc}</p>
             </motion.div>

@@ -1,23 +1,68 @@
-import React, { useEffect } from "react";
+// src/pages/index.jsx
+import React, { useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import {
-  Activity,
-  AlertTriangle,
-  MapPin,
-  User,
-  HeartPulse,
-  Stethoscope,
-} from "lucide-react";
+import { Globe, Activity, AlertTriangle, MapPin, User, HeartPulse, Stethoscope } from "lucide-react";
 import { motion } from "framer-motion";
+import { LanguageContext } from "../context/LanguageContext";
+
+const LANGS = {
+  en: {
+    getHelp: "Get Help Instantly",
+    desc: "Start your AI-powered triage or press SOS for emergency. Supports voice input & multiple languages.",
+    startSymptom: "Start Symptom Check",
+    sos: "SOS / Emergency",
+    myProfile: "My Profile",
+    myProfileDesc: "Manage health info, history, and saved hospitals.",
+    nearbyHospitals: "Nearby Hospitals",
+    nearbyHospitalsDesc: "Find closest hospitals with live availability.",
+    firstAid: "First Aid Guide",
+    firstAidDesc: "Step-by-step emergency instructions.",
+    consultDoctor: "Consult a Doctor",
+    consultDoctorDesc: "Instantly connect with verified doctors.",
+  },
+  hi: {
+    getHelp: "तुरंत सहायता प्राप्त करें",
+    desc: "अपनी AI-पावर्ड जाँच शुरू करें या आपातकालीन SOS दबाएँ। वॉइस इनपुट और कई भाषाओं का समर्थन करता है।",
+    startSymptom: "लक्षण जांच शुरू करें",
+    sos: "एसओएस / आपातकालीन",
+    myProfile: "मेरा प्रोफ़ाइल",
+    myProfileDesc: "स्वास्थ्य जानकारी, इतिहास और सहेजे गए अस्पताल प्रबंधित करें।",
+    nearbyHospitals: "निकटतम अस्पताल",
+    nearbyHospitalsDesc: "निकटतम अस्पताल लाइव उपलब्धता के साथ खोजें।",
+    firstAid: "प्राथमिक चिकित्सा गाइड",
+    firstAidDesc: "चरण-दर-चरण आपातकालीन निर्देश।",
+    consultDoctor: "डॉक्टर से संपर्क करें",
+    consultDoctorDesc: "सत्यापित डॉक्टरों से तुरंत जुड़ें।",
+  },
+  ta: {
+    getHelp: "உடனடி உதவி பெறவும்",
+    desc: "உங்கள் AI-ஆல் இயக்கப்படும் சிகிச்சையை தொடங்கவும் அல்லது அவசர SOS அழுத்தவும். குரல் உள்ளீடு மற்றும் பல மொழிகள் ஆதரிக்கின்றன.",
+    startSymptom: "அறிகுறிகள் சரிபார்க்கவும்",
+    sos: "SOS / அவசரத்தடை",
+    myProfile: "என் ப்ரொஃபைல்",
+    myProfileDesc: "சுகாதாரத் தகவல், வரலாறு மற்றும் சேமிக்கப்பட்ட மருத்துவமனைகளை நிர்வகிக்கவும்.",
+    nearbyHospitals: "நெருங்கிய மருத்துவமனைகள்",
+    nearbyHospitalsDesc: "நெருங்கிய மருத்துவமனைகளை நேரடி கிடைக்கும் தகவலுடன் கண்டறியவும்.",
+    firstAid: "முதன்மை மருத்துவ கையேடு",
+    firstAidDesc: "படிகள் அடிப்படையிலான அவசர வழிகாட்டி.",
+    consultDoctor: "மருத்துவரை அணுகவும்",
+    consultDoctorDesc: "சரிபார்க்கப்பட்ட மருத்தவர்களுடன் உடனே இணைக்கவும்.",
+  },
+};
 
 export default function Home() {
+  const { lang, setLang } = useContext(LanguageContext);
+  const t = LANGS[lang] || LANGS.en;
+
   useEffect(() => {
     window.scrollTo(0, 0); // Scroll to top on mount
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-sky-50 relative overflow-hidden">
-      {/* Floating blobs */}
+
+
+      {/* Floating Blobs */}
       <motion.div
         animate={{ y: [0, 20, 0], x: [0, 15, 0] }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
@@ -31,6 +76,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-6xl mx-auto px-4 py-16 space-y-24">
+
         {/* CTA Section */}
         <motion.section
           initial={{ opacity: 0, y: 40 }}
@@ -39,14 +85,10 @@ export default function Home() {
           className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-12 sm:p-16 text-center border border-sky-100"
         >
           <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-6">
-            Get Help Instantly
+            {t.getHelp}
           </h2>
           <p className="text-gray-700 max-w-2xl mx-auto mb-12 text-lg sm:text-xl">
-            Start your{" "}
-            <span className="font-semibold text-sky-600">AI-powered triage</span>{" "}
-            or press{" "}
-            <span className="font-semibold text-red-500">SOS for emergency</span>
-            . Supports <strong>voice input</strong> & multiple languages.
+            {t.desc}
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-6">
@@ -60,9 +102,10 @@ export default function Home() {
                            flex items-center gap-3 overflow-hidden group"
               >
                 <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition" />
-                <Activity size={20} /> Start Symptom Check
+                <Activity size={20} /> {t.startSymptom}
               </motion.button>
             </Link>
+
             <Link to="/emergency">
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -73,7 +116,7 @@ export default function Home() {
                            flex items-center gap-3 overflow-hidden group"
               >
                 <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition" />
-                <AlertTriangle size={20} /> SOS / Emergency
+                <AlertTriangle size={20} /> {t.sos}
               </motion.button>
             </Link>
           </div>
@@ -87,30 +130,10 @@ export default function Home() {
           className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3"
         >
           {[
-            {
-              title: "My Profile",
-              desc: "Manage health info, history, and saved hospitals.",
-              icon: <User className="text-sky-500" />,
-              link: "/profile",
-            },
-            {
-              title: "Nearby Hospitals",
-              desc: "Find closest hospitals with live availability.",
-              icon: <MapPin className="text-green-500" />,
-              link: "/hospital",
-            },
-            {
-              title: "First Aid Guide",
-              desc: "Step-by-step emergency instructions.",
-              icon: <HeartPulse className="text-orange-500" />,
-              link: "/firstaid",
-            },
-            {
-              title: "Consult a Doctor",
-              desc: "Instantly connect with verified doctors.",
-              icon: <Stethoscope className="text-purple-500" />,
-              link: "/consultdoctor",
-            },
+            { title: t.myProfile, desc: t.myProfileDesc, icon: <User className="text-sky-500" />, link: "/profile" },
+            { title: t.nearbyHospitals, desc: t.nearbyHospitalsDesc, icon: <MapPin className="text-green-500" />, link: "/hospital" },
+            { title: t.firstAid, desc: t.firstAidDesc, icon: <HeartPulse className="text-orange-500" />, link: "/firstaid" },
+            { title: t.consultDoctor, desc: t.consultDoctorDesc, icon: <Stethoscope className="text-purple-500" />, link: "/consultdoctor" },
           ].map((card, i) => (
             <motion.div
               key={i}
@@ -120,7 +143,6 @@ export default function Home() {
                          shadow-2xl hover:shadow-3xl border border-sky-100/40 
                          transition group cursor-pointer overflow-hidden"
             >
-              {/* Gradient glow border */}
               <div className="absolute inset-0 bg-gradient-to-r from-sky-300 via-blue-200 to-sky-300 
                               opacity-0 group-hover:opacity-100 blur-2xl transition" />
               <Link to={card.link} className="relative block">
