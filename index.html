@@ -2,138 +2,51 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0ea5a4" />
-    <meta name="application-name" content="MediLink360" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MediLink360" />
-    <meta name="mobile-web-app-capable" content="yes" />
 
-    <!-- Icons -->
-    <link rel="icon" href="/logo.png" type="image/png" />
-    <link rel="apple-touch-icon" href="/logo.png" sizes="192x192" />
-    <link rel="mask-icon" href="/logo.svg" color="#0ea5a4" />
+    <!-- Required icons -->
+    <link rel="icon" href="/images/icon-192.png" />
+    <link rel="apple-touch-icon" href="/images/icon-192.png" />
+    <link rel="apple-touch-icon" href="/images/icon-512.png" />
 
-    <!-- Splash Screens for iOS -->
-    <link rel="apple-touch-startup-image" href="/splash-640x1136.png" media="(device-width: 320px)" />
-    <link rel="apple-touch-startup-image" href="/splash-750x1334.png" media="(device-width: 375px)" />
-    <link rel="apple-touch-startup-image" href="/splash-1242x2208.png" media="(device-width: 414px)" />
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <!-- SEO -->
     <title>MediLink360 - Patient PWA</title>
-    <meta
-      name="description"
-      content="MediLink360 - A patient-first healthcare PWA for managing appointments, doctors, and hospitals anytime, anywhere."
-    />
-    <meta name="keywords" content="healthcare, patient app, doctors, hospitals, PWA, MediLink360" />
-    <meta name="author" content="MediLink360 Team" />
-
-    <!-- Open Graph / Social Preview -->
-    <meta property="og:title" content="MediLink360 - Patient PWA" />
-    <meta
-      property="og:description"
-      content="Your healthcare companion: manage appointments, connect with doctors, and access hospital services seamlessly."
-    />
-    <meta property="og:image" content="/preview.png" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://medilink360.app" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MediLink360 - Patient PWA" />
-    <meta name="twitter:description" content="Smart healthcare at your fingertips." />
-    <meta name="twitter:image" content="/preview.png" />
-
-    <!-- Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "MediLink360",
-        "url": "https://medilink360.app",
-        "description": "Patient-first healthcare PWA for managing appointments, doctors, and hospitals.",
-        "applicationCategory": "HealthApplication",
-        "operatingSystem": "Android, iOS, Web",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
-      }
-    </script>
-
-    <!-- Base Styling -->
-    <style>
-      body {
-        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #f9fafb;
-        color: #111827;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-      #root {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
-      noscript {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #fff3f3;
-        color: #b91c1c;
-        font-weight: 600;
-        padding: 1rem;
-        text-align: center;
-      }
-    </style>
   </head>
 
   <body>
-    <!-- React App Mount -->
-    <div id="root" role="main" aria-label="MediLink360 App"></div>
+    <div id="root"></div>
 
-    <noscript>
-      ⚠️ MediLink360 requires JavaScript to run. Please enable JavaScript in your browser settings.
-    </noscript>
-
-    <!-- React Entry -->
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Service Worker -->
     <script>
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/service-worker.js")
-            .then((reg) => console.log("✅ Service Worker registered:", reg.scope))
-            .catch((err) => console.error("❌ Service Worker failed:", err));
-        });
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .then((reg) => console.log("✅ SW registered:", reg.scope))
+          .catch((err) => console.error("❌ SW failed:", err));
       }
 
-      // ✅ Install Prompt Handling (PWA "Add to Home Screen")
+      // ✅ PWA install prompt
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         window.deferredPrompt = e;
-        console.log("📲 PWA install prompt saved for later use.");
+
+        const btn = document.createElement("button");
+        btn.innerText = "📲 Install MediLink360";
+        btn.style =
+          "position:fixed;bottom:20px;right:20px;padding:12px 20px;background:#0ea5a4;color:white;border:none;border-radius:10px;font-weight:600;";
+        btn.onclick = async () => {
+          window.deferredPrompt.prompt();
+          const choice = await window.deferredPrompt.userChoice;
+          console.log("User choice:", choice);
+          btn.remove();
+        };
+        document.body.appendChild(btn);
       });
     </script>
   </body>
