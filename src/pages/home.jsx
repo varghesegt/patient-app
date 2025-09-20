@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Home.jsx
+import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HeartPulse,
-  Stethoscope,
   AlertTriangle,
-  Users,
   Hospital,
+  Globe,
 } from "lucide-react";
+import { LanguageContext } from "../context/LanguageContext";
 
-// Supported Languages
+// === Multilingual Support ===
 const LANGS = {
   en: {
     appName: "MediLink360",
@@ -22,53 +23,69 @@ const LANGS = {
     emergency: "Emergency SOS",
     symptoms: "Check Symptoms",
     hospital: "Nearby Hospitals",
-    features: [
-      {
-        title: "Symptom Checker",
-        desc: "AI-powered triage to guide your next steps.",
-        icon: <HeartPulse className="mx-auto text-sky-500" size={40} />,
-      },
-      {
-        title: "Emergency SOS",
-        desc: "Get instant help and live ambulance tracking.",
-        icon: <AlertTriangle className="mx-auto text-red-500" size={40} />,
-      },
-      {
-        title: "Doctor Connect",
-        desc: "Consult certified doctors online 24/7.",
-        icon: <Stethoscope className="mx-auto text-green-500" size={40} />,
-      },
-      {
-        title: "For Everyone",
-        desc: "Patients, caregivers, or guests — MediLink360 is here for you.",
-        icon: <Users className="mx-auto text-purple-500" size={40} />,
-      },
-    ],
     footer: "Built for Better Health Access",
     chooseLang: "Choose Your Language",
     install: "📲 Install MediLink360",
-    iosTip: "📲 To install MediLink360: Tap Share → Add to Home Screen",
+    iosTip: "📲 To install: Tap Share → Add to Home Screen",
+    offline: "is offline. Some features may be limited.",
+  },
+  hi: {
+    appName: "मेडी लिंक 360",
+    tagline:
+      "आपका व्यक्तिगत स्वास्थ्य सहायक। लक्षण जांचें, तुरंत आपातकालीन सहायता प्राप्त करें, और डॉक्टरों से जुड़ें — सब कुछ एक ही प्लेटफ़ॉर्म पर।",
+    login: "लॉगिन",
+    register: "रजिस्टर",
+    guest: "अतिथि के रूप में जारी रखें",
+    quickAccess: "त्वरित पहुँच (गेस्ट मोड)",
+    emergency: "आपातकालीन SOS",
+    symptoms: "लक्षण जांचें",
+    hospital: "नज़दीकी अस्पताल",
+    footer: "बेहतर स्वास्थ्य पहुँच के लिए बनाया गया",
+    chooseLang: "अपनी भाषा चुनें",
+    install: "📲 इंस्टॉल करें MediLink360",
+    iosTip: "📲 इंस्टॉल करने के लिए: शेयर → Add to Home Screen",
+    offline: "ऑफ़लाइन है। कुछ सुविधाएँ सीमित हो सकती हैं।",
+  },
+  ta: {
+    appName: "மெடிலிங்க்360",
+    tagline:
+      "உங்களின் தனிப்பட்ட சுகாதார உதவியாளர். அறிகுறிகளைச் சரிபார்க்கவும், அவசர உதவியை உடனடியாகப் பெறவும், மற்றும் மருத்தவர்களைத் தொடர்புகொள்ளவும் — அனைத்தும் ஒரே தளத்தில்.",
+    login: "உள்நுழைக",
+    register: "பதிவு செய்க",
+    guest: "விருந்தினராக தொடரவும்",
+    quickAccess: "விரைவான அணுகல் (விருந்தினர்)",
+    emergency: "அவசர SOS",
+    symptoms: "அறிகுறிகள் பார்க்க",
+    hospital: "அருகிலுள்ள மருத்துவமனைகள்",
+    footer: "சிறந்த சுகாதார அணுகலுக்காக உருவாக்கப்பட்டது",
+    chooseLang: "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
+    install: "📲 நிறுவுக MediLink360",
+    iosTip: "📲 நிறுவ: பகிர்வு → முகப்பு திரைக்கு சேர்",
+    offline: "ஆஃப்லைனில் உள்ளது. சில அம்சங்கள் வேலை செய்யாமல் இருக்கலாம்.",
   },
 };
 
 export default function Home() {
   const navigate = useNavigate();
-  const [lang, setLang] = useState(localStorage.getItem("lang") || null);
+  const { lang, setLang } = useContext(LanguageContext);
 
   // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
   const [showIosBanner, setShowIosBanner] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  // Detect browser language (first visit only)
+  const t = LANGS[lang] || LANGS.en;
+
+  // Detect browser language if none set
   useEffect(() => {
     if (!lang) {
       const browserLang = navigator.language.slice(0, 2);
       setLang(LANGS[browserLang] ? browserLang : "en");
     }
-  }, [lang]);
+  }, [lang, setLang]);
 
-  // Install logic
+  // Install + iOS handling
   useEffect(() => {
     const isIos = /iphone|ipad|ipod/.test(
       window.navigator.userAgent.toLowerCase()
@@ -87,14 +104,23 @@ export default function Home() {
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-
     window.addEventListener("appinstalled", () => {
       console.log("✅ MediLink360 installed");
       setShowInstall(false);
       setShowIosBanner(false);
     });
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -104,11 +130,10 @@ export default function Home() {
       setDeferredPrompt(null);
       setShowInstall(false);
     } else if (showIosBanner) {
-      alert(LANGS.en.iosTip);
+      alert(t.iosTip);
     }
   };
 
-  // Language selection
   const chooseLanguage = (code) => {
     setLang(code);
     localStorage.setItem("lang", code);
@@ -119,11 +144,23 @@ export default function Home() {
     navigate(path);
   };
 
-  const t = lang ? LANGS[lang] : LANGS.en;
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
-      {/* === iOS Banner === */}
+      {/* === Offline Banner === */}
+      <AnimatePresence>
+        {isOffline && (
+          <motion.div
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            className="fixed top-0 inset-x-0 bg-red-600 text-white py-2 text-center text-sm z-50"
+          >
+            ⚠️ {t.appName} {t.offline}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* === iOS Install Banner === */}
       <AnimatePresence>
         {showIosBanner && (
           <motion.div
@@ -137,7 +174,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Language Selection Modal */}
+      {/* Language Selection Modal (only if no language set yet) */}
       <AnimatePresence>
         {!lang && (
           <motion.div
@@ -156,25 +193,24 @@ export default function Home() {
                 🌐 {LANGS.en.chooseLang}
               </h2>
               <div className="flex flex-col gap-4">
-                {Object.keys(LANGS).map((code) => (
-                  <button
-                    key={code}
-                    onClick={() => chooseLanguage(code)}
-                    className={`px-6 py-3 rounded-xl font-semibold text-white transition ${
-                      code === "en"
-                        ? "bg-sky-600 hover:bg-sky-700"
-                        : code === "hi"
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-pink-600 hover:bg-pink-700"
-                    }`}
-                  >
-                    {code === "en"
-                      ? "English"
-                      : code === "hi"
-                      ? "हिन्दी"
-                      : "தமிழ்"}
-                  </button>
-                ))}
+                <button
+                  onClick={() => chooseLanguage("en")}
+                  className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold"
+                >
+                  English
+                </button>
+                <button
+                  onClick={() => chooseLanguage("hi")}
+                  className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold"
+                >
+                  हिन्दी
+                </button>
+                <button
+                  onClick={() => chooseLanguage("ta")}
+                  className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-semibold"
+                >
+                  தமிழ்
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -185,21 +221,15 @@ export default function Home() {
         <>
           {/* Floating Language Switcher */}
           <div className="absolute top-6 right-6 z-40 flex items-center gap-2 bg-white border rounded-lg shadow-md px-3 py-1 hover:shadow-lg transition">
-            <span>🌐</span>
+            <Globe className="w-4 h-4 text-sky-600" />
             <select
               value={lang}
               onChange={(e) => chooseLanguage(e.target.value)}
               className="bg-transparent focus:outline-none text-gray-700 font-medium cursor-pointer"
             >
-              {Object.keys(LANGS).map((code) => (
-                <option key={code} value={code}>
-                  {code === "en"
-                    ? "English"
-                    : code === "hi"
-                    ? "हिन्दी"
-                    : "தமிழ்"}
-                </option>
-              ))}
+              <option value="en">English</option>
+              <option value="hi">हिन्दी</option>
+              <option value="ta">தமிழ்</option>
             </select>
           </div>
 
@@ -238,7 +268,6 @@ export default function Home() {
               >
                 {t.login}
               </Link>
-
               <Link
                 to="/register"
                 className="px-6 py-3 rounded-xl font-semibold shadow-lg border border-sky-600 text-sky-700 hover:bg-sky-50 hover:scale-105 transition"
@@ -291,7 +320,7 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/* ✅ Install Button (only on Home) */}
+          {/* Install Button */}
           <AnimatePresence>
             {showInstall && (
               <motion.button

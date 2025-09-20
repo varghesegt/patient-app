@@ -2,7 +2,7 @@
 import React, { Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { LanguageProvider } from "./context/LanguageContext"; // Corrected path
+import { LanguageProvider } from "./context/LanguageContext"; // Ensure correct path
 import Navbar from "./components/layout/Navbar";
 import AppRouter from "./router/AppRouter";
 
@@ -13,10 +13,14 @@ export default function App() {
         <LanguageProvider>
           <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 transition-colors duration-300">
             
-            {/* Global Navbar */}
+            {/* =========================
+                Global Navbar
+            ========================= */}
             <Navbar />
 
-            {/* Main Content */}
+            {/* =========================
+                Main Content
+            ========================= */}
             <main className="flex-1">
               <Suspense
                 fallback={
