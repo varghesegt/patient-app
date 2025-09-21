@@ -147,18 +147,25 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
       {/* === Offline Banner === */}
-      <AnimatePresence>
-        {isOffline && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            className="fixed top-0 inset-x-0 bg-red-600 text-white py-2 text-center text-sm z-50"
-          >
-            ⚠️ {t.appName} {t.offline}
-          </motion.div>
-        )}
-      </AnimatePresence>
+<AnimatePresence>
+  {isOffline && (
+    <motion.div
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -50, opacity: 0 }}
+      className="fixed top-0 inset-x-0 bg-red-600 text-white py-2 px-4 flex items-center justify-between text-sm z-50"
+    >
+      <span>⚠️ {t.appName} {t.offline}</span>
+      <button
+        onClick={() => setIsOffline(false)}
+        className="ml-4 text-white hover:text-gray-200 font-bold text-lg"
+      >
+        ×
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
+
 
       {/* === iOS Install Banner === */}
       <AnimatePresence>
