@@ -15,7 +15,7 @@ const LANGS = {
   en: {
     appName: "MediLink360",
     tagline:
-      "Your personal health assistant. Check symptoms, get instant emergency support, and connect with doctors — all in one platform.",
+      "Your personal health assistant. Check symptoms, get instant emergency support, and connect with doctors all in one platform.",
     login: "Login",
     register: "Register",
     guest: "Continue as Guest",
@@ -32,7 +32,7 @@ const LANGS = {
   hi: {
     appName: "मेडी लिंक 360",
     tagline:
-      "आपका व्यक्तिगत स्वास्थ्य सहायक। लक्षण जांचें, तुरंत आपातकालीन सहायता प्राप्त करें, और डॉक्टरों से जुड़ें — सब कुछ एक ही प्लेटफ़ॉर्म पर।",
+      "आपका व्यक्तिगत स्वास्थ्य सहायक। लक्षण जांचें, तुरंत आपातकालीन सहायता प्राप्त करें, और डॉक्टरों से जुड़ें सब कुछ एक ही प्लेटफ़ॉर्म पर।",
     login: "लॉगिन",
     register: "रजिस्टर",
     guest: "अतिथि के रूप में जारी रखें",
@@ -49,7 +49,7 @@ const LANGS = {
   ta: {
     appName: "மெடிலிங்க்360",
     tagline:
-      "உங்களின் தனிப்பட்ட சுகாதார உதவியாளர். அறிகுறிகளைச் சரிபார்க்கவும், அவசர உதவியை உடனடியாகப் பெறவும், மற்றும் மருத்தவர்களைத் தொடர்புகொள்ளவும் — அனைத்தும் ஒரே தளத்தில்.",
+      "உங்களின் தனிப்பட்ட சுகாதார உதவியாளர். அறிகுறிகளைச் சரிபார்க்கவும், அவசர உதவியை உடனடியாகப் பெறவும், மற்றும் மருத்தவர்களைத் தொடர்புகொள்ளவும் அனைத்தும் ஒரே தளத்தில்.",
     login: "உள்நுழைக",
     register: "பதிவு செய்க",
     guest: "விருந்தினராக தொடரவும்",

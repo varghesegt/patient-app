@@ -1,8 +1,65 @@
-import React, { useState } from "react";
+// src/pages/Contact.jsx
+import React, { useState, useContext } from "react";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Send, Info } from "lucide-react";
+import { LanguageContext } from "../context/LanguageContext";
+
+// ✅ Translations
+const LANGS = {
+  en: {
+    title: "Get in Touch",
+    desc: "Have questions or need support? Reach out to our team and we will respond promptly.",
+    callUs: "Call Us",
+    email: "Email",
+    visitUs: "Visit Us",
+    sendMsg: "Send a Message",
+    yourName: "Your Name",
+    yourEmail: "Your Email",
+    yourMessage: "Your Message",
+    btnSend: "Send Message",
+    success: "Thank you! Your message has been sent.",
+    disclaimer: "Disclaimer:",
+    disclaimerText:
+      "Contact form submissions are for queries and support only. In case of emergencies, call 108 or visit the nearest hospital.",
+  },
+  hi: {
+    title: "संपर्क करें",
+    desc: "क्या आपके पास प्रश्न हैं या सहायता चाहिए? हमारी टीम से संपर्क करें, हम शीघ्र ही जवाब देंगे।",
+    callUs: "कॉल करें",
+    email: "ईमेल",
+    visitUs: "हमसे मिलें",
+    sendMsg: "संदेश भेजें",
+    yourName: "आपका नाम",
+    yourEmail: "आपका ईमेल",
+    yourMessage: "आपका संदेश",
+    btnSend: "संदेश भेजें",
+    success: "धन्यवाद! आपका संदेश भेज दिया गया है।",
+    disclaimer: "अस्वीकरण:",
+    disclaimerText:
+      "संपर्क फ़ॉर्म केवल प्रश्नों और सहायता के लिए है। आपात स्थिति में, 108 पर कॉल करें या निकटतम अस्पताल जाएं।",
+  },
+  ta: {
+    title: "எங்களை தொடர்பு கொள்ளவும்",
+    desc: "உங்களுக்கு கேள்விகள் அல்லது ஆதரவு தேவையா? எங்களை தொடர்பு கொள்ளுங்கள், நாங்கள் விரைவில் பதிலளிப்போம்.",
+    callUs: "அழைக்கவும்",
+    email: "மின்னஞ்சல்",
+    visitUs: "எங்களைச் சந்திக்கவும்",
+    sendMsg: "செய்தி அனுப்பு",
+    yourName: "உங்கள் பெயர்",
+    yourEmail: "உங்கள் மின்னஞ்சல்",
+    yourMessage: "உங்கள் செய்தி",
+    btnSend: "செய்தி அனுப்பு",
+    success: "நன்றி! உங்கள் செய்தி அனுப்பப்பட்டது.",
+    disclaimer: "குறிப்பு:",
+    disclaimerText:
+      "தொடர்பு படிவம் கேள்விகள் மற்றும் ஆதரவுக்காக மட்டுமே. அவசர நிலைகளில், 108 அழைக்கவும் அல்லது அருகிலுள்ள மருத்துவமனைக்கு செல்லவும்.",
+  },
+};
 
 export default function Contact() {
+  const { lang } = useContext(LanguageContext);
+  const t = LANGS[lang] || LANGS.en;
+
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
 
@@ -12,7 +69,7 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Here you can integrate email sending or API call
+    // TODO: integrate backend/email service
     setSubmitted(true);
     setForm({ name: "", email: "", message: "" });
   };
@@ -27,10 +84,10 @@ export default function Contact() {
         className="text-center px-6 pt-16 sm:pt-24"
       >
         <h1 className="text-[clamp(2.5rem,6vw,4rem)] font-extrabold bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
-          Get in Touch
+          {t.title}
         </h1>
         <p className="mt-5 text-gray-700 max-w-3xl mx-auto text-lg sm:text-xl leading-relaxed">
-          Have questions or need support? Reach out to our team and we will respond promptly.
+          {t.desc}
         </p>
       </motion.div>
 
@@ -39,21 +96,21 @@ export default function Contact() {
         {[
           {
             icon: <Phone className="w-6 h-6 text-indigo-600" />,
-            title: "Call Us",
+            title: t.callUs,
             info: "+91 1234 567 890",
             link: "tel:+911234567890",
             bg: "bg-white/70",
           },
           {
             icon: <Mail className="w-6 h-6 text-red-500" />,
-            title: "Email",
+            title: t.email,
             info: "support@healthapp.com",
             link: "mailto:support@healthapp.com",
             bg: "bg-white/70",
           },
           {
             icon: <MapPin className="w-6 h-6 text-green-500" />,
-            title: "Visit Us",
+            title: t.visitUs,
             info: "123 Health St, Bengaluru, India",
             link: "https://goo.gl/maps/example",
             bg: "bg-white/70",
@@ -77,9 +134,8 @@ export default function Contact() {
         ))}
       </div>
 
-      {/* Contact Form + Map */}
+      {/* Contact Form */}
       <div className="max-w-7xl mx-auto mt-20 px-4 flex flex-col lg:flex-row gap-10">
-        {/* Form */}
         <motion.form
           onSubmit={handleSubmit}
           initial={{ opacity: 0, x: -30 }}
@@ -88,14 +144,16 @@ export default function Contact() {
           transition={{ duration: 0.7 }}
           className="flex-1 bg-white/80 backdrop-blur-lg border border-gray-200 rounded-2xl p-8 shadow-lg"
         >
-          <h2 className="text-2xl font-bold text-indigo-700 mb-6">Send a Message</h2>
+          <h2 className="text-2xl font-bold text-indigo-700 mb-6">
+            {t.sendMsg}
+          </h2>
           <div className="flex flex-col gap-4">
             <input
               type="text"
               name="name"
               value={form.name}
               onChange={handleChange}
-              placeholder="Your Name"
+              placeholder={t.yourName}
               required
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
             />
@@ -104,7 +162,7 @@ export default function Contact() {
               name="email"
               value={form.email}
               onChange={handleChange}
-              placeholder="Your Email"
+              placeholder={t.yourEmail}
               required
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
             />
@@ -112,7 +170,7 @@ export default function Contact() {
               name="message"
               value={form.message}
               onChange={handleChange}
-              placeholder="Your Message"
+              placeholder={t.yourMessage}
               required
               rows={5}
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
@@ -121,12 +179,12 @@ export default function Contact() {
               type="submit"
               className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white py-3 rounded-xl font-medium shadow hover:scale-[1.02] transition"
             >
-              <Send className="w-5 h-5" /> Send Message
+              <Send className="w-5 h-5" /> {t.btnSend}
             </button>
           </div>
           {submitted && (
             <p className="mt-4 text-green-600 font-medium text-center">
-              Thank you! Your message has been sent.
+              {t.success}
             </p>
           )}
         </motion.form>
@@ -142,8 +200,7 @@ export default function Contact() {
       >
         <Info className="w-7 h-7 text-yellow-600 shrink-0" />
         <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
-          <span className="font-semibold">Disclaimer:</span> Contact form submissions are for queries and support only. 
-          In case of emergencies, call 108 or visit the nearest hospital.
+          <span className="font-semibold">{t.disclaimer}</span> {t.disclaimerText}
         </p>
       </motion.div>
 

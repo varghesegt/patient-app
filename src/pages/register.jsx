@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/pages/Register.jsx
+import React, { useState, useEffect, useContext } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,13 +11,121 @@ import {
   UserCircle,
   HeartPulse,
   Calendar,
-  Baby,
   UserSquare,
+  Languages,
 } from "lucide-react";
+import { LanguageContext } from "../context/LanguageContext";
+
+const LANGS = {
+  en: {
+    title: "Create Account",
+    subtitle: "Register as",
+    in: "in MediLink360",
+    selectRole: "Select Role",
+    patient: "Patient",
+    doctor: "Doctor",
+    hospital: "Hospital Admin",
+    name: "Full Name",
+    email: "Email Address",
+    password: "Password",
+    confirmPassword: "Confirm Password",
+    registeringFor: "Registering For",
+    self: "Myself",
+    family: "Family Member",
+    relation: "Relation (e.g., Father, Mother, Child)",
+    gender: "Gender",
+    male: "Male ♂",
+    female: "Female ♀",
+    other: "Other",
+    dob: "Date of Birth",
+    bloodGroup: "Blood Group",
+    chronic: "Chronic Conditions",
+    otherCondition: "Other condition...",
+    allergies: "Known Allergies",
+    otherAllergy: "Other allergy...",
+    specialization: "Specialization",
+    license: "Medical License ID",
+    hospitalName: "Hospital Name",
+    hospitalCode: "Hospital Code / Reg No.",
+    register: "Register",
+    already: "Already have an account?",
+    login: "Login here",
+  },
+  hi: {
+    title: "खाता बनाएं",
+    subtitle: "पंजीकरण करें",
+    in: "में MediLink360",
+    selectRole: "भूमिका चुनें",
+    patient: "रोगी",
+    doctor: "डॉक्टर",
+    hospital: "अस्पताल व्यवस्थापक",
+    name: "पूरा नाम",
+    email: "ईमेल पता",
+    password: "पासवर्ड",
+    confirmPassword: "पासवर्ड की पुष्टि करें",
+    registeringFor: "किसके लिए पंजीकरण कर रहे हैं",
+    self: "स्वयं",
+    family: "परिवार का सदस्य",
+    relation: "संबंध (जैसे पिता, माता, बच्चा)",
+    gender: "लिंग",
+    male: "पुरुष ♂",
+    female: "महिला ♀",
+    other: "अन्य",
+    dob: "जन्म तिथि",
+    bloodGroup: "रक्त समूह",
+    chronic: "दीर्घकालिक रोग",
+    otherCondition: "अन्य रोग...",
+    allergies: "ज्ञात एलर्जी",
+    otherAllergy: "अन्य एलर्जी...",
+    specialization: "विशेषज्ञता",
+    license: "मेडिकल लाइसेंस आईडी",
+    hospitalName: "अस्पताल का नाम",
+    hospitalCode: "अस्पताल कोड / रजिस्ट्रेशन संख्या",
+    register: "पंजीकरण करें",
+    already: "पहले से खाता है?",
+    login: "यहाँ लॉगिन करें",
+  },
+  ta: {
+    title: "கணக்கு உருவாக்கவும்",
+    subtitle: "பதிவு செய்யவும்",
+    in: "MediLink360 இல்",
+    selectRole: "பங்கு தேர்வு",
+    patient: "நோயாளர்",
+    doctor: "மருத்துவர்",
+    hospital: "மருத்துவமனை நிர்வாகி",
+    name: "முழுப் பெயர்",
+    email: "மின்னஞ்சல் முகவரி",
+    password: "கடவுச்சொல்",
+    confirmPassword: "கடவுச்சொல்லை உறுதிப்படுத்தவும்",
+    registeringFor: "யாருக்காக பதிவு செய்கிறீர்கள்",
+    self: "நான்",
+    family: "குடும்ப உறுப்பினர்",
+    relation: "உறவு (உதா: தந்தை, தாய், குழந்தை)",
+    gender: "பாலினம்",
+    male: "ஆண் ♂",
+    female: "பெண் ♀",
+    other: "மற்றவை",
+    dob: "பிறந்த தேதி",
+    bloodGroup: "இரத்த வகை",
+    chronic: "நீண்டநாள் நோய்கள்",
+    otherCondition: "மற்ற நோய்...",
+    allergies: "அறியப்பட்ட ஒவ்வாமைகள்",
+    otherAllergy: "மற்ற ஒவ்வாமை...",
+    specialization: "சிறப்பியல்",
+    license: "மருத்துவ உரிமம் ஐடி",
+    hospitalName: "மருத்துவமனை பெயர்",
+    hospitalCode: "மருத்துவமனை குறியீடு / பதிவு எண்",
+    register: "பதிவு",
+    already: "ஏற்கனவே கணக்கு உள்ளதா?",
+    login: "இங்கே உள்நுழைக",
+  },
+};
 
 export default function Register() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { lang, setLang } = useContext(LanguageContext);
+  const t = LANGS[lang] || LANGS.en;
 
   const initialRole = location.state?.role || "patient";
   const [role, setRole] = useState(initialRole);
@@ -26,18 +135,15 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    // patient
-    registeringFor: "self", // self | family
+    registeringFor: "self",
     relation: "",
     gender: "",
     dob: "",
     bloodGroup: "",
     chronicConditions: "",
     allergies: "",
-    // doctor
     specialization: "",
     licenseId: "",
-    // hospital
     hospitalName: "",
     hospitalCode: "",
   });
@@ -55,41 +161,42 @@ export default function Register() {
       alert("❌ Passwords do not match!");
       return;
     }
-    alert(`🎉 Registered successfully as ${role}!`);
+    alert(`🎉 ${t.register} ${role}!`);
     navigate("/login", { state: { role } });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-sky-50 to-sky-100 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-sky-100 px-4">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-8"
+        className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl p-6 sm:p-8 relative"
       >
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-sky-700">Create Account ✨</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-sky-700">
+            {t.title}
+          </h2>
           <p className="text-gray-600 text-sm mt-2">
-            Register as{" "}
-            <span className="font-semibold capitalize">{role}</span> in{" "}
-            <span className="font-semibold">MediLink360</span>
+            {t.subtitle}{" "}
+            <span className="font-semibold capitalize">{role}</span> {t.in}
           </p>
         </div>
 
         {/* Role Selection */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Role
+            {t.selectRole}
           </label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-sky-400"
           >
-            <option value="patient">Patient</option>
-            <option value="doctor">Doctor</option>
-            <option value="hospital">Hospital Admin</option>
+            <option value="patient">{t.patient}</option>
+            <option value="doctor">{t.doctor}</option>
+            <option value="hospital">{t.hospital}</option>
           </select>
         </div>
 
@@ -101,7 +208,7 @@ export default function Register() {
             <input
               type="text"
               name="name"
-              placeholder="Full Name"
+              placeholder={t.name}
               value={form.name}
               onChange={handleChange}
               className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -115,7 +222,7 @@ export default function Register() {
             <input
               type="email"
               name="email"
-              placeholder="Email Address"
+              placeholder={t.email}
               value={form.email}
               onChange={handleChange}
               className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -129,7 +236,7 @@ export default function Register() {
             <input
               type="password"
               name="password"
-              placeholder="Password"
+              placeholder={t.password}
               value={form.password}
               onChange={handleChange}
               className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -143,7 +250,7 @@ export default function Register() {
             <input
               type="password"
               name="confirmPassword"
-              placeholder="Confirm Password"
+              placeholder={t.confirmPassword}
               value={form.confirmPassword}
               onChange={handleChange}
               className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -165,7 +272,7 @@ export default function Register() {
                 {/* Registering for */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Registering For
+                    {t.registeringFor}
                   </label>
                   <select
                     name="registeringFor"
@@ -173,8 +280,8 @@ export default function Register() {
                     onChange={handleChange}
                     className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-sky-400"
                   >
-                    <option value="self">Myself</option>
-                    <option value="family">Family Member</option>
+                    <option value="self">{t.self}</option>
+                    <option value="family">{t.family}</option>
                   </select>
                 </div>
 
@@ -187,7 +294,7 @@ export default function Register() {
                     <input
                       type="text"
                       name="relation"
-                      placeholder="Relation (e.g., Father, Mother, Child)"
+                      placeholder={t.relation}
                       value={form.relation}
                       onChange={handleChange}
                       className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -199,7 +306,7 @@ export default function Register() {
                 {/* Gender */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender
+                    {t.gender}
                   </label>
                   <select
                     name="gender"
@@ -208,10 +315,10 @@ export default function Register() {
                     className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-sky-400"
                     required
                   >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male ♂</option>
-                    <option value="female">Female ♀</option>
-                    <option value="other">Other</option>
+                    <option value="">{t.gender}</option>
+                    <option value="male">{t.male}</option>
+                    <option value="female">{t.female}</option>
+                    <option value="other">{t.other}</option>
                   </select>
                 </div>
 
@@ -234,7 +341,7 @@ export default function Register() {
                 {/* Blood Group */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Blood Group
+                    {t.bloodGroup}
                   </label>
                   <select
                     name="bloodGroup"
@@ -243,7 +350,7 @@ export default function Register() {
                     className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-sky-400"
                     required
                   >
-                    <option value="">Select Blood Group</option>
+                    <option value="">{t.bloodGroup}</option>
                     <option value="A+">A+</option>
                     <option value="A-">A-</option>
                     <option value="B+">B+</option>
@@ -254,141 +361,6 @@ export default function Register() {
                     <option value="AB-">AB-</option>
                   </select>
                 </div>
-
-                {/* Chronic Conditions */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Chronic Conditions
-  </label>
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-    {[
-      "Diabetes",
-      "Hypertension",
-      "Asthma",
-      "COPD",
-      "Heart Disease",
-      "Kidney Disease",
-      "Liver Disease",
-      "Cancer",
-      "Thyroid Disorder",
-      "Arthritis",
-    ].map((condition) => (
-      <label
-        key={condition}
-        className="flex items-center gap-2 p-2 border rounded-lg hover:bg-sky-50 cursor-pointer"
-      >
-        <input
-          type="checkbox"
-          name="chronicConditions"
-          value={condition}
-          checked={form.chronicConditions
-            ?.split(",")
-            .includes(condition)}
-          onChange={(e) => {
-            let selected = form.chronicConditions
-              ? form.chronicConditions.split(",")
-              : [];
-            if (e.target.checked) {
-              selected.push(condition);
-            } else {
-              selected = selected.filter((c) => c !== condition);
-            }
-            setForm({ ...form, chronicConditions: selected.join(",") });
-          }}
-          className="accent-sky-600"
-        />
-        <span className="text-sm">{condition}</span>
-      </label>
-    ))}
-  </div>
-  {/* Custom Input */}
-  <input
-    type="text"
-    placeholder="Other condition..."
-    className="mt-2 w-full border rounded-lg p-2 focus:ring-2 focus:ring-sky-400"
-    onBlur={(e) => {
-      if (e.target.value.trim()) {
-        const selected = form.chronicConditions
-          ? form.chronicConditions.split(",")
-          : [];
-        selected.push(e.target.value.trim());
-        setForm({
-          ...form,
-          chronicConditions: selected.join(","),
-        });
-        e.target.value = "";
-      }
-    }}
-  />
-</div>
-
-{/* Allergies */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Known Allergies
-  </label>
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-    {[
-      "Penicillin",
-      "Sulfa Drugs",
-      "Aspirin",
-      "NSAIDs",
-      "Latex",
-      "Insect Bites",
-      "Dust/Pollen",
-      "Peanuts",
-      "Tree Nuts",
-      "Seafood",
-      "Eggs",
-      "Milk",
-    ].map((allergy) => (
-      <label
-        key={allergy}
-        className="flex items-center gap-2 p-2 border rounded-lg hover:bg-rose-50 cursor-pointer"
-      >
-        <input
-          type="checkbox"
-          name="allergies"
-          value={allergy}
-          checked={form.allergies?.split(",").includes(allergy)}
-          onChange={(e) => {
-            let selected = form.allergies
-              ? form.allergies.split(",")
-              : [];
-            if (e.target.checked) {
-              selected.push(allergy);
-            } else {
-              selected = selected.filter((c) => c !== allergy);
-            }
-            setForm({ ...form, allergies: selected.join(",") });
-          }}
-          className="accent-rose-600"
-        />
-        <span className="text-sm">{allergy}</span>
-      </label>
-    ))}
-  </div>
-  {/* Custom Input */}
-  <input
-    type="text"
-    placeholder="Other allergy..."
-    className="mt-2 w-full border rounded-lg p-2 focus:ring-2 focus:ring-rose-400"
-    onBlur={(e) => {
-      if (e.target.value.trim()) {
-        const selected = form.allergies
-          ? form.allergies.split(",")
-          : [];
-        selected.push(e.target.value.trim());
-        setForm({
-          ...form,
-          allergies: selected.join(","),
-        });
-        e.target.value = "";
-      }
-    }}
-  />
-</div>
-
               </motion.div>
             )}
 
@@ -409,7 +381,7 @@ export default function Register() {
                   <input
                     type="text"
                     name="specialization"
-                    placeholder="Specialization"
+                    placeholder={t.specialization}
                     value={form.specialization}
                     onChange={handleChange}
                     className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -424,7 +396,7 @@ export default function Register() {
                   <input
                     type="text"
                     name="licenseId"
-                    placeholder="Medical License ID"
+                    placeholder={t.license}
                     value={form.licenseId}
                     onChange={handleChange}
                     className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -451,7 +423,7 @@ export default function Register() {
                   <input
                     type="text"
                     name="hospitalName"
-                    placeholder="Hospital Name"
+                    placeholder={t.hospitalName}
                     value={form.hospitalName}
                     onChange={handleChange}
                     className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -466,7 +438,7 @@ export default function Register() {
                   <input
                     type="text"
                     name="hospitalCode"
-                    placeholder="Hospital Code / Reg No."
+                    placeholder={t.hospitalCode}
                     value={form.hospitalCode}
                     onChange={handleChange}
                     className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
@@ -482,19 +454,19 @@ export default function Register() {
             type="submit"
             className="w-full bg-sky-600 text-white py-2.5 rounded-lg hover:bg-sky-700 shadow-lg transition-all"
           >
-            Register
+            {t.register}
           </button>
         </form>
 
         {/* Login Link */}
         <p className="text-sm text-center text-gray-600 mt-6">
-          Already have an account?{" "}
+          {t.already}{" "}
           <Link
             to="/login"
             state={{ role }}
             className="text-sky-600 font-medium hover:underline"
           >
-            Login here
+            {t.login}
           </Link>
         </p>
       </motion.div>
