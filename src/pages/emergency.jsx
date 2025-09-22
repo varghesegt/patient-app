@@ -1,5 +1,4 @@
-// src/pages/Emergency.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   AlertTriangle,
   PhoneCall,
@@ -16,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import OfflineSMS from "../features/emergency/OfflineSMS";
 
 export default function Emergency() {
+  // ===== State Management =====
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,34 +24,137 @@ export default function Emergency() {
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("sosHistory")) || []
   );
+  const [sosQueue, setSosQueue] = useState(
+    JSON.parse(localStorage.getItem("sosQueue")) || []
+  );
   const [vibrateSupported, setVibrateSupported] = useState(false);
+  const [nearbyHospitals, setNearbyHospitals] = useState({ gov: [], priv: [] });
+  const [loadingHospitals, setLoadingHospitals] = useState(false);
+  const [hiddenTypes, setHiddenTypes] = useState([]);
 
+  // Emergency types (static ref so not re-rendered)
+  const emergencyTypesRef = useRef([
+    { id: "accident", label: "Accident" },
+    { id: "stroke", label: "Stroke" },
+    { id: "fire", label: "Fire" },
+    { id: "assault", label: "Assault" },
+    { id: "other", label: "Other" },
+  ]);
+
+  // ===== Effects =====
   useEffect(() => {
-    // Detect online/offline
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // Vibrate support
     setVibrateSupported("vibrate" in navigator);
+
+    if (isOnline) flushQueue();
 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline]);
 
-  // Save SOS request to history (max 5)
-  const saveToHistory = (data) => {
-    const newHistory = [data, ...history].slice(0, 5);
-    setHistory(newHistory);
-    localStorage.setItem("sosHistory", JSON.stringify(newHistory));
+  useEffect(() => {
+    localStorage.setItem("sosQueue", JSON.stringify(sosQueue));
+  }, [sosQueue]);
+
+  useEffect(() => {
+    localStorage.setItem("sosHistory", JSON.stringify(history));
+  }, [history]);
+
+  // ===== Helpers =====
+  const saveToHistory = (data) =>
+    setHistory(([data, ...history].slice(0, 10)));
+
+  const addToQueue = (data) =>
+    setSosQueue(([data, ...sosQueue].slice(0, 20)));
+
+  const clearHistoryItem = (idx) =>
+    setHistory(history.filter((_, i) => i !== idx));
+
+  const clearQueue = () => setSosQueue([]);
+
+  const isGovernmentHospital = (name) => {
+    if (!name) return false;
+    const keywords = [
+      "govt",
+      "government",
+      "municipal",
+      "state",
+      "public",
+      "regional",
+      "rural hospital",
+      "district hospital",
+      "medical college",
+    ];
+    return keywords.some((k) => name.toLowerCase().includes(k));
   };
 
-  // Main SOS handler
-  const handleSOS = async (useLiveLocation) => {
+  // ===== Hospital Lookup =====
+  const fetchNearbyHospitals = async (lat, lng, radius = 5000) => {
+    try {
+      setLoadingHospitals(true);
+      const query = `[out:json][timeout:25];(
+        node[amenity=hospital](around:${radius},${lat},${lng});
+        way[amenity=hospital](around:${radius},${lat},${lng});
+        relation[amenity=hospital](around:${radius},${lat},${lng});
+      );out center 20;`;
+
+      const res = await fetch("https://overpass-api.de/api/interpreter", {
+        method: "POST",
+        body: query,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+
+      const data = await res.json();
+      const places = (data.elements || []).map((el) => ({
+        id: el.id,
+        name: el.tags?.name || el.tags?.operator,
+        lat: el.lat || el.center?.lat,
+        lng: el.lon || el.center?.lon,
+        addr: el.tags?.["addr:full"] || el.tags?.["addr:street"],
+        tags: el.tags || {},
+      }));
+
+      setNearbyHospitals({
+        gov: places.filter((p) => isGovernmentHospital(p.name)),
+        priv: places.filter((p) => !isGovernmentHospital(p.name)),
+      });
+    } catch (err) {
+      console.error("Hospital lookup failed:", err);
+      setNearbyHospitals({ gov: [], priv: [] });
+    } finally {
+      setLoadingHospitals(false);
+    }
+  };
+
+  // ===== SOS Handling =====
+  const flushQueue = async () => {
+    if (!isOnline || sosQueue.length === 0) return;
+    const remaining = [];
+
+    for (const item of sosQueue) {
+      try {
+        const res = await fetch("/api/emergency/sos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item),
+        });
+        if (!res.ok) throw new Error("Failed to send");
+      } catch {
+        remaining.push(item);
+      }
+    }
+    setSosQueue(remaining);
+  };
+
+  const handleSOS = async (useLiveLocation, type = "other") => {
     try {
       setSending(true);
       setSent(false);
@@ -69,35 +172,48 @@ export default function Emergency() {
         latitude = position.coords.latitude;
         longitude = position.coords.longitude;
       } else {
-        latitude = manualLocation.lat;
-        longitude = manualLocation.lng;
+        latitude = parseFloat(manualLocation.lat);
+        longitude = parseFloat(manualLocation.lng);
       }
+
+      const nearest = await fetchNearbyHospitals(latitude, longitude, 10000);
 
       const sosData = {
         lat: latitude,
         lng: longitude,
         timestamp: new Date().toISOString(),
-        status: isOnline ? "Sent Online" : "Saved Offline",
+        status: isOnline ? "Sent Online" : "Queued Offline",
+        type,
+        nearestGovHospitals: nearest.gov?.slice(0, 3),
+        nearestPrivateHospitals: nearest.priv?.slice(0, 3),
       };
 
       if (isOnline) {
-        // Online POST
-        await fetch("/api/emergency/sos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(sosData),
-        });
+        try {
+          const res = await fetch("/api/emergency/sos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sosData),
+          });
+          if (!res.ok) throw new Error("Server POST failed");
+        } catch {
+          addToQueue(sosData);
+        }
       } else {
-        // Offline fallback → SMS
-        window.location.href = `sms:?body=🚨 EMERGENCY! Location: https://maps.google.com/?q=${latitude},${longitude}`;
+        const smsBody = encodeURIComponent(
+          `🚨 EMERGENCY (${type.toUpperCase()})! Location: https://maps.google.com/?q=${latitude},${longitude}`
+        );
+        window.location.href = `sms:?body=${smsBody}`;
+        addToQueue({ ...sosData, status: "Queued Offline - SMS Sent" });
       }
 
       saveToHistory(sosData);
+      setHiddenTypes((prev) => [...prev, type]);
 
-      // Feedback
       setSending(false);
       setSent(true);
       vibrateSupported && navigator.vibrate([200, 100, 200]);
+
       setTimeout(() => setSent(false), 5000);
     } catch (err) {
       console.error("SOS failed:", err);
@@ -105,18 +221,21 @@ export default function Emergency() {
     }
   };
 
+  const openModal = () => {
+    setModalOpen(true);
+    navigator.geolocation.getCurrentPosition((pos) =>
+      fetchNearbyHospitals(pos.coords.latitude, pos.coords.longitude, 8000)
+    );
+  };
+
+  // ===== UI =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 sm:p-10 relative overflow-hidden">
-      {/* Animated Background Glows */}
+      {/* Glowing Background */}
       <motion.div
         animate={{ x: [0, 20, 0], y: [0, 15, 0] }}
         transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-10 left-10 w-60 h-60 bg-red-300 rounded-full blur-3xl opacity-20 pointer-events-none"
-      />
-      <motion.div
-        animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-10 right-10 w-72 h-72 bg-red-400 rounded-full blur-3xl opacity-15 pointer-events-none"
       />
 
       <div className="max-w-5xl mx-auto relative z-10">
@@ -132,8 +251,8 @@ export default function Emergency() {
             Emergency Help
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-300 text-base sm:text-lg">
-            If you are in <span className="font-semibold text-red-600">immediate danger</span>, press SOS below.
-            Choose live location or custom location.
+            Quick emergency actions. Select a type to send location + suggested
+            nearby hospitals. Government hospitals are shown first.
           </p>
           <div className="flex items-center justify-center mt-2 gap-2">
             {isOnline ? (
@@ -148,7 +267,7 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* SOS Button */}
+        {/* SOS Main Button */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -161,8 +280,8 @@ export default function Emergency() {
 
           <div className="flex flex-col items-center gap-6">
             <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setModalOpen(true)}
+              whileTap={{ scale: 0.95 }}
+              onClick={openModal}
               disabled={sending}
               className={`relative w-40 h-40 flex items-center justify-center rounded-full font-bold text-2xl uppercase tracking-wide ${
                 sending ? "bg-gray-400" : "bg-red-600 hover:bg-red-700"
@@ -182,65 +301,110 @@ export default function Emergency() {
 
             {!sending && !sent && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Press SOS to trigger instant emergency response.
+                Tap to choose emergency type & location.
               </p>
             )}
-            {sending && <p className="text-sm text-gray-600 dark:text-gray-400">Sending location…</p>}
-            {sent && <p className="text-sm text-green-600 dark:text-green-400 font-semibold">SOS triggered ✅</p>}
+            {sending && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Sending location…
+              </p>
+            )}
+            {sent && (
+              <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
+                SOS triggered ✅
+              </p>
+            )}
           </div>
         </motion.div>
 
-        {/* Modal for Location Selection */}
         <AnimatePresence>
           {modalOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl w-full max-w-md relative"
-              >
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-                <h4 className="text-lg font-semibold mb-4">Choose Location Mode</h4>
-                <div className="space-y-4">
-                  <button
-                    onClick={() => handleSOS(true)}
-                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                  >
-                    📍 Use Live Location
-                  </button>
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Enter Latitude"
-                      value={manualLocation.lat}
-                      onChange={(e) => setManualLocation({ ...manualLocation, lat: e.target.value })}
-                      className="border rounded p-2 w-full"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Enter Longitude"
-                      value={manualLocation.lng}
-                      onChange={(e) => setManualLocation({ ...manualLocation, lng: e.target.value })}
-                      className="border rounded p-2 w-full"
-                    />
-                    <button
-                      onClick={() => handleSOS(false)}
-                      disabled={!manualLocation.lat || !manualLocation.lng}
-                      className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                    >
-                      🗺 Use Custom Location
-                    </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl w-full max-w-2xl relative">
+                <button onClick={() => setModalOpen(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                <h4 className="text-lg font-semibold mb-4">Choose Emergency Type & Location</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-medium mb-2">Emergency Type</p>
+                    <div className="flex flex-wrap gap-2">
+                      {emergencyTypesRef.current.map((t) => {
+                        if (hiddenTypes.includes(t.id)) return null; // disappear after selecting
+                        return (
+                          <button key={t.id} onClick={() => handleSOS(true, t.id)} className="px-3 py-2 rounded-lg bg-red-600 text-white hover:opacity-90">
+                            {t.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="font-medium mb-2">Or use custom location</p>
+                      <input type="text" placeholder="Latitude" value={manualLocation.lat} onChange={(e) => setManualLocation({ ...manualLocation, lat: e.target.value })} className="border rounded p-2 w-full mb-2" />
+                      <input type="text" placeholder="Longitude" value={manualLocation.lng} onChange={(e) => setManualLocation({ ...manualLocation, lng: e.target.value })} className="border rounded p-2 w-full mb-2" />
+                      <div className="flex gap-2">
+                        <button onClick={() => handleSOS(false, 'other')} disabled={!manualLocation.lat || !manualLocation.lng} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">Send From Custom Location</button>
+                        <button onClick={() => {
+                          navigator.geolocation.getCurrentPosition((p)=>{
+                            setManualLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
+                          });
+                        }} className="px-4 py-2 bg-gray-200 rounded-lg">Use Current Loc</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-medium mb-2">Nearby Hospitals (government first)</p>
+                    <div className="h-56 overflow-auto border rounded p-2">
+                      {loadingHospitals ? (
+                        <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Loading…</div>
+                      ) : (
+                        <>
+                          {nearbyHospitals.gov.length === 0 && nearbyHospitals.priv.length === 0 ? (
+                            <p className="text-sm text-gray-500">No hospitals found yet. Allow location and reopen modal or try again.</p>
+                          ) : (
+                            <>
+                              {nearbyHospitals.gov.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-green-700">Government Hospitals</p>
+                                  <ul className="space-y-2 mt-2">
+                                    {nearbyHospitals.gov.map((h) => (
+                                      <li key={h.id} className="flex justify-between items-start">
+                                        <div>
+                                          <div className="font-medium">{h.name || "Unnamed Gov Hospital"}</div>
+                                          <div className="text-xs text-gray-500">{h.addr}</div>
+                                        </div>
+                                        <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-sm text-blue-600">Map</a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              {nearbyHospitals.priv.length > 0 && (
+                                <div className="mt-4">
+                                  <p className="text-xs font-semibold text-gray-700">Private Hospitals</p>
+                                  <ul className="space-y-2 mt-2">
+                                    {nearbyHospitals.priv.map((h) => (
+                                      <li key={h.id} className="flex justify-between items-start">
+                                        <div>
+                                          <div className="font-medium">{h.name || "Unnamed Private Hospital"}</div>
+                                          <div className="text-xs text-gray-500">{h.addr}</div>
+                                        </div>
+                                        <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-sm text-blue-600">Map</a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-2">
+                      <button onClick={() => navigator.geolocation.getCurrentPosition((p)=>fetchNearbyHospitals(p.coords.latitude, p.coords.longitude, 8000))} className="flex-1 px-3 py-2 rounded-lg bg-gray-100">Refresh</button>
+                      <button onClick={() => setNearbyHospitals({ gov: [], priv: [] })} className="px-3 py-2 rounded-lg bg-gray-100">Clear</button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -248,44 +412,52 @@ export default function Emergency() {
           )}
         </AnimatePresence>
 
-        {/* Offline Fallback */}
-        <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 p-6 rounded-2xl shadow-md"
-        >
+        {/* Offline & Queue */}
+        <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }} className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 p-6 rounded-2xl shadow-md">
           <OfflineSMS />
+          <div className="mt-4">
+            <div className="flex items-center justify-between">
+              <div className="font-medium">Offline Queue</div>
+              <div className="text-sm text-gray-500">{sosQueue.length} pending</div>
+            </div>
+            {sosQueue.length > 0 ? (
+              <ul className="mt-3 space-y-2 text-sm">
+                {sosQueue.map((q, i) => (
+                  <li key={i} className="flex justify-between items-start border-b pb-1">
+                    <div>
+                      <div className="font-medium">{q.type?.toUpperCase() || 'SOS'}</div>
+                      <div className="text-xs text-gray-500">{new Date(q.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => { navigator.share && navigator.share({ title: 'SOS', text: `SOS: ${q.type} - https://maps.google.com/?q=${q.lat},${q.lng}` }); }} className="text-xs px-2 py-1 bg-gray-100 rounded">Share</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 mt-2">No pending items</p>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button onClick={flushQueue} className="px-3 py-2 bg-green-600 text-white rounded">Try Send Now</button>
+              <button onClick={clearQueue} className="px-3 py-2 bg-gray-200 rounded">Clear Queue</button>
+            </div>
+          </div>
         </motion.div>
 
         {/* SOS History */}
         {history.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="mt-8 bg-white/80 dark:bg-gray-800/70 p-5 rounded-xl shadow-md"
-          >
-            <h4 className="flex items-center gap-2 font-semibold mb-3">
-              <History size={18} /> Last SOS Requests
-            </h4>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.6 }} className="mt-8 bg-white/80 dark:bg-gray-800/70 p-5 rounded-xl shadow-md">
+            <h4 className="flex items-center gap-2 font-semibold mb-3"><History size={18} /> Last SOS Requests</h4>
             <ul className="space-y-2 text-sm">
               {history.map((h, i) => (
-                <li
-                  key={i}
-                  className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300"
-                >
+                <li key={i} className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300">
                   <span>
-                    {new Date(h.timestamp).toLocaleTimeString()} - {h.status}
+                    {new Date(h.timestamp).toLocaleString()} - {h.status} - {h.type?.toUpperCase()}
                   </span>
-                  <a
-                    href={`https://maps.google.com/?q=${h.lat},${h.lng}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-500 hover:underline"
-                  >
-                    View Map
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">View Map</a>
+                    <button onClick={() => clearHistoryItem(i)} className="text-xs text-red-500">Remove</button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -293,12 +465,7 @@ export default function Emergency() {
         )}
 
         {/* Additional Emergency Options */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="mt-10 grid gap-6 sm:grid-cols-2"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }} className="mt-10 grid gap-6 sm:grid-cols-2">
           {[
             {
               icon: PhoneCall,
@@ -315,10 +482,10 @@ export default function Emergency() {
             },
             {
               icon: MapPin,
-              title: "Location Share",
-              desc: "Share your location manually to responders.",
+              title: "Share Location",
+              desc: "Share your current map link with a contact.",
               color: "text-purple-500",
-              action: () => navigator.share && navigator.share({ title: "My Location", url: window.location.href }),
+              action: () => navigator.share && navigator.share({ title: "My Location", text: `I'm here: ${window.location.href}` }),
             },
             {
               icon: AlertTriangle,
@@ -327,12 +494,7 @@ export default function Emergency() {
               color: "text-orange-500",
             },
           ].map((card, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              onClick={card.action}
-              className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2"
-            >
+            <motion.div key={i} whileHover={{ scale: 1.05 }} onClick={card.action} className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <card.icon className={`${card.color}`} size={24} />
                 <h4 className="font-semibold text-gray-800 dark:text-gray-200">{card.title}</h4>
