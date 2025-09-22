@@ -86,6 +86,7 @@ const STRINGS = {
   },
 };
 
+
 export default function PatientProfile() {
   const { lang } = useContext(LanguageContext);
   const t = STRINGS[lang] || STRINGS.en;
@@ -149,7 +150,7 @@ export default function PatientProfile() {
   };
 
   return (
-    <div className="relative max-w-5xl mx-auto p-4 sm:p-6">
+    <div className="relative min-h-screen bg-gray-50 max-w-5xl mx-auto p-4 sm:p-6">
       {/* ✅ Toast */}
       <AnimatePresence>
         {toast && (
@@ -177,10 +178,10 @@ export default function PatientProfile() {
                 )}&background=E5F4FF&color=0ea5e9&size=128`
               }
               alt="Profile"
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-gray-200 shadow"
             />
             {editMode && (
-              <label className="absolute bottom-0 right-0 bg-sky-500 p-1.5 rounded-full cursor-pointer hover:bg-sky-600">
+              <label className="absolute bottom-0 right-0 bg-sky-500 p-1.5 rounded-full cursor-pointer hover:bg-sky-600 shadow">
                 <Camera size={16} className="text-white" />
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
@@ -193,7 +194,7 @@ export default function PatientProfile() {
                 name="name"
                 value={profile.name}
                 onChange={handleChange}
-                className="text-xl sm:text-2xl font-bold border-b border-gray-300 p-1 outline-none focus:border-sky-400 w-full"
+                className="text-xl sm:text-2xl font-bold border-b border-gray-300 p-1 outline-none focus:border-sky-400 w-full bg-transparent"
               />
             ) : (
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{profile.name}</h2>
@@ -208,7 +209,7 @@ export default function PatientProfile() {
 
         <button
           onClick={editMode ? saveProfile : () => setEditMode(true)}
-          className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600 shadow-sm transition"
+          className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600 shadow-md transition"
         >
           {editMode ? <Save size={18} /> : <Edit2 size={18} />}
           {editMode ? t.save : t.edit}
@@ -237,7 +238,7 @@ export default function PatientProfile() {
       </div>
 
       {/* ✅ Mobile bottom tabs */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg flex justify-around py-2 z-40">
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow flex justify-around py-2 z-40">
         {["overview", "medical", "reports"].map((tKey) => (
           <button
             key={tKey}
@@ -262,7 +263,7 @@ export default function PatientProfile() {
             className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-20 sm:pb-0"
           >
             {/* Contact */}
-            <div className="bg-white/80 p-4 rounded-xl shadow border space-y-2">
+            <div className="bg-white p-4 rounded-xl shadow-md border space-y-2">
               <h3 className="font-semibold text-gray-700">{t.contactInfo}</h3>
               <div className="flex items-center gap-2">
                 <Phone size={16} className="text-sky-500" />
@@ -286,20 +287,20 @@ export default function PatientProfile() {
 
             {/* BMI, Checkup, Blood Group */}
             <div className="grid grid-cols-3 gap-3 sm:col-span-1">
-              <div className="bg-white/80 p-3 rounded-xl shadow flex flex-col items-center">
+              <div className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center">
                 <Activity className="text-sky-500" size={18} />
                 <p className="text-xs text-gray-500">{t.bmi}</p>
-                <p className="font-semibold">{profile.bmi}</p>
+                <p className="font-semibold text-gray-800">{profile.bmi}</p>
               </div>
-              <div className="bg-white/80 p-3 rounded-xl shadow flex flex-col items-center">
+              <div className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center">
                 <Calendar className="text-sky-500" size={18} />
                 <p className="text-xs text-gray-500">{t.lastCheckup}</p>
-                <p className="font-semibold">{profile.lastCheckup}</p>
+                <p className="font-semibold text-gray-800">{profile.lastCheckup}</p>
               </div>
-              <div className="bg-white/80 p-3 rounded-xl shadow flex flex-col items-center">
-                <Droplet className="text-red-400" size={18} />
+              <div className="bg-white p-3 rounded-xl shadow-md flex flex-col items-center">
+                <Droplet className="text-red-500" size={18} />
                 <p className="text-xs text-gray-500">{t.bloodGroup}</p>
-                <p className="font-semibold">{profile.bloodGroup}</p>
+                <p className="font-semibold text-gray-800">{profile.bloodGroup}</p>
               </div>
             </div>
           </motion.div>
@@ -316,7 +317,7 @@ export default function PatientProfile() {
             className="space-y-4 pb-20 sm:pb-0"
           >
             {["conditions", "allergies", "prescriptions"].map((field) => (
-              <div key={field} className="bg-white/80 p-4 rounded-xl shadow border">
+              <div key={field} className="bg-white p-4 rounded-xl shadow-md border">
                 <h4 className="font-semibold mb-2 flex items-center gap-2 capitalize text-sky-600">
                   {field === "conditions" && <Stethoscope size={16} />}
                   {field === "allergies" && <Droplet size={16} className="text-red-500" />}
@@ -326,7 +327,7 @@ export default function PatientProfile() {
                 <ul className="space-y-1">
                   {profile[field].map((item, i) => (
                     <li key={i} className="flex justify-between items-center bg-gray-50 px-3 py-1.5 rounded-lg">
-                      <span>{item}</span>
+                      <span className="text-gray-700">{item}</span>
                       {editMode && (
                         <button onClick={() => handleRemove(field.slice(0, -1), i)}
                           className="text-red-500 hover:text-red-700">
@@ -365,7 +366,7 @@ export default function PatientProfile() {
           >
             {profile.labReports.map((report, i) => (
               <div key={i}
-                className="bg-white/80 p-4 rounded-xl shadow border flex justify-between items-center hover:shadow-lg transition">
+                className="bg-white p-4 rounded-xl shadow-md border flex justify-between items-center hover:shadow-lg transition">
                 <div className="flex items-center gap-2">
                   <FileBarChart size={18} className="text-purple-500" />
                   <span className="text-gray-800">{report}</span>
