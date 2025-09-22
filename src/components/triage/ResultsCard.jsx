@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
@@ -10,8 +10,61 @@ import {
   Phone,
   MapPin,
 } from "lucide-react";
+import { LanguageContext } from "../../context/LanguageContext";
+
+/* 🌍 Translations */
+const STRINGS = {
+  en: {
+    recommendation: {
+      CRITICAL: "⚠️ Seek immediate medical attention.",
+      CAUTION: "⚠️ Monitor closely and consult a doctor soon.",
+      SAFE: "✅ No immediate risk. Maintain regular checkups.",
+    },
+    callAmbulance: "Call Ambulance",
+    shareLocation: "Share My Location",
+    fetchingLocation: "Fetching Location...",
+    locationError: "❌ Location not supported on this device.",
+    locationDenied: "❌ Location access denied.",
+    confidence: "Confidence",
+    showReasons: "Show Reasons",
+    hideReasons: "Hide Reasons",
+  },
+  hi: {
+    recommendation: {
+      CRITICAL: "⚠️ तुरंत चिकित्सकीय सहायता लें।",
+      CAUTION: "⚠️ ध्यानपूर्वक मॉनिटर करें और जल्द डॉक्टर से सलाह लें।",
+      SAFE: "✅ तत्काल खतरा नहीं। नियमित जांच जारी रखें।",
+    },
+    callAmbulance: "एम्बुलेंस कॉल करें",
+    shareLocation: "मेरा स्थान साझा करें",
+    fetchingLocation: "स्थान लाया जा रहा है...",
+    locationError: "❌ इस डिवाइस पर स्थान समर्थित नहीं है।",
+    locationDenied: "❌ स्थान तक पहुंच अस्वीकृत।",
+    confidence: "विश्वसनीयता",
+    showReasons: "कारण दिखाएँ",
+    hideReasons: "कारण छिपाएँ",
+  },
+  ta: {
+    recommendation: {
+      CRITICAL: "⚠️ உடனடி மருத்துவ உதவியைப் பெறவும்.",
+      CAUTION: "⚠️ கவனமாக கண்காணிக்கவும், மருத்துவரை அணுகவும்.",
+      SAFE: "✅ உடனடி ஆபத்து இல்லை. வழக்கமான பரிசோதனைகளை மேற்கொள்ளவும்.",
+    },
+    callAmbulance: "அம்புலன்ஸ் அழைக்கவும்",
+    shareLocation: "என் இருப்பிடம் பகிரவும்",
+    fetchingLocation: "இருப்பிடம் பெறப்படுகிறது...",
+    locationError: "❌ இந்த சாதனத்தில் இருப்பிடம் ஆதரிக்கப்படவில்லை.",
+    locationDenied: "❌ இருப்பிட அணுகல் மறுக்கப்பட்டது.",
+    confidence: "நம்பகத்தன்மை",
+    showReasons: "காரணங்கள் காண்பி",
+    hideReasons: "காரணங்களை மறை",
+  },
+};
 
 export default function ResultsCard({ result }) {
+  const { lang } = useContext(LanguageContext);
+  const t = STRINGS[lang] || STRINGS.en;
+
   if (!result) return null;
 
   const { score = 0, label = "SAFE", reasons = [] } = result;
@@ -27,7 +80,7 @@ export default function ResultsCard({ result }) {
           text: "text-red-700",
           icon: <XCircle className="w-6 h-6 text-red-600" />,
           gradient: "bg-gradient-to-r from-red-500 to-red-700",
-          recommendation: "⚠️ Seek immediate medical attention.",
+          recommendation: t.recommendation.CRITICAL,
           severe: true,
         };
       case "CAUTION":
@@ -36,7 +89,7 @@ export default function ResultsCard({ result }) {
           text: "text-yellow-700",
           icon: <AlertTriangle className="w-6 h-6 text-yellow-600" />,
           gradient: "bg-gradient-to-r from-yellow-400 to-yellow-600",
-          recommendation: "⚠️ Monitor closely and consult a doctor soon.",
+          recommendation: t.recommendation.CAUTION,
           severe: false,
         };
       default:
@@ -45,7 +98,7 @@ export default function ResultsCard({ result }) {
           text: "text-green-700",
           icon: <CheckCircle className="w-6 h-6 text-green-600" />,
           gradient: "bg-gradient-to-r from-green-400 to-green-600",
-          recommendation: "✅ No immediate risk. Maintain regular checkups.",
+          recommendation: t.recommendation.SAFE,
           severe: false,
         };
     }
@@ -53,10 +106,9 @@ export default function ResultsCard({ result }) {
 
   const theme = getTheme();
 
-  // 📍 Share location (without auto booking)
   const shareLocation = () => {
     if (!navigator.geolocation) {
-      setStatus("❌ Location not supported on this device.");
+      setStatus(t.locationError);
       return;
     }
 
@@ -67,13 +119,14 @@ export default function ResultsCard({ result }) {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        setStatus(`📍 Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)} 
-          → [Open in Maps](${mapsUrl})`);
+        setStatus(
+          `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)} → [Open in Maps](${mapsUrl})`
+        );
         setLoading(false);
       },
       (err) => {
         console.error(err);
-        setStatus("❌ Location access denied.");
+        setStatus(t.locationDenied);
         setLoading(false);
       }
     );
@@ -131,7 +184,7 @@ export default function ResultsCard({ result }) {
 
       {/* Confidence Bar */}
       <div className="mt-5">
-        <div className="text-xs text-gray-600 mb-1">Confidence</div>
+        <div className="text-xs text-gray-600 mb-1">{t.confidence}</div>
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
@@ -148,35 +201,25 @@ export default function ResultsCard({ result }) {
         <span>{theme.recommendation}</span>
       </div>
 
-      {/* 🚑 Emergency Action for Critical */}
+      {/* Emergency Action */}
       {theme.severe && (
         <div className="mt-6 space-y-3">
-          {/* Direct Call */}
           <button
-            className="w-full flex items-center justify-center gap-2 
-                       bg-red-600 hover:bg-red-700 
-                       text-white font-medium px-5 py-3 
-                       rounded-xl shadow-md transition"
+            className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-3 rounded-xl shadow-md transition"
             onClick={() => window.open("tel:102")}
           >
-            <Phone className="w-5 h-5" /> Call Ambulance
+            <Phone className="w-5 h-5" /> {t.callAmbulance}
           </button>
 
-          {/* Share Location */}
           <button
             disabled={loading}
             onClick={shareLocation}
-            className="w-full flex items-center justify-center gap-2 
-                       bg-orange-500 hover:bg-orange-600 
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       text-white font-medium px-5 py-3 
-                       rounded-xl shadow-md transition"
+            className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium px-5 py-3 rounded-xl shadow-md transition"
           >
             <MapPin className="w-5 h-5" />
-            {loading ? "Fetching Location..." : "Share My Location"}
+            {loading ? t.fetchingLocation : t.shareLocation}
           </button>
 
-          {/* Show Location Info */}
           {status && (
             <motion.p
               initial={{ opacity: 0 }}
@@ -198,11 +241,11 @@ export default function ResultsCard({ result }) {
           >
             {expanded ? (
               <>
-                <ChevronUp className="w-4 h-4" /> Hide Reasons
+                <ChevronUp className="w-4 h-4" /> {t.hideReasons}
               </>
             ) : (
               <>
-                <ChevronDown className="w-4 h-4" /> Show Reasons
+                <ChevronDown className="w-4 h-4" /> {t.showReasons}
               </>
             )}
           </button>
