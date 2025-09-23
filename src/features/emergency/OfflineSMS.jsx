@@ -1,22 +1,4 @@
-/*
-Advanced OfflineSMS React Component
-- Offline-first with IndexedDB (robust wrapper)
-- Service Worker registration + Background Sync (when available)
-- Persistent pending queue stored in IDB and localStorage fallback
-- Continuous / watchPosition location with last-known fallback
-- Reverse-geocoding (OpenStreetMap Nominatim) when online to show readable address
-- SMS intent builder that handles Android/iOS differences
-- SMS length splitting to avoid truncation (basic segmentation)
-- Retry, delete, edit pending messages UI
 
-FILES:
-- This file: OfflineSMS.jsx (React component)
-- service-worker snippet included at bottom (sw.js) -> register this at your public root
-
-Notes:
-- For background sync to work you must serve over HTTPS and have a real service worker file at /sw.js
-- Nominatim reverse-geocoding has usage policy; for production use get an API key or your own geocoding service.
-*/
 
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -535,29 +517,3 @@ export default function OfflineSMS() {
   );
 }
 
-/* ================= SERVICE WORKER (sw.js) - place at public root ================= */
-/*
-self.addEventListener('install', event => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
-});
-
-// Example background sync handler that would POST pending messages to server
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'offline-sms-sync') {
-    event.waitUntil((async () => {
-      // Read pending from IndexedDB or postMessage clients to trigger flush
-      // Implementation depends on how you store pending messages in production
-      const allClients = await clients.matchAll({ includeUncontrolled: true });
-      for (const c of allClients) {
-        c.postMessage({ type: 'SYNC_PENDING' });
-      }
-    })());
-  }
-});
-
-// You may also add fetch handlers, caching strategies etc.
-*/
