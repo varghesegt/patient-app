@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
+  Wifi,
   WifiOff,
   MapPin,
   Loader2,
@@ -13,22 +14,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-/**
- * Advanced OfflineSMS component
- *
- * Features:
- * - Emergency type selector (templates)
- * - GPS auto-attach
- * - Instant send: online -> API (simulated), offline -> native SMS app (sms: URI)
- * - Copy/share fallback, vibrate/alert UX
- * - Small local history (no queueing)
- * - Auto-retry last message once online (keeps immediate-send behavior)
- *
- * Replace the `onlineSendApi` function with your real backend/Twilio API call.
- * Replace `DEFAULT_RECIPIENT` with your emergency number(s).
- */
-
-const DEFAULT_RECIPIENT = "+911234567890"; // <-- replace with actual number(s) or allow user input
+// ✅ Replace this with your emergency numbers
+const DEFAULT_RECIPIENT = "+911234567890";
 
 const TEMPLATES = {
   accident: {
@@ -37,8 +24,7 @@ const TEMPLATES = {
   },
   stroke: {
     title: "Suspected Stroke — Urgent",
-    body:
-      "🚨 Suspected stroke (FAST: Face droop / Arm weakness / Speech / Time). Need urgent medical help.",
+    body: "🚨 Suspected stroke. FAST: Face droop / Arm weakness / Speech trouble / Time critical.",
   },
   cardiac: {
     title: "Cardiac Emergency",
@@ -50,7 +36,7 @@ const TEMPLATES = {
   },
   other: {
     title: "Emergency",
-    body: "🚨 Emergency — please respond.",
+    body: "🚨 Emergency — please respond immediately.",
   },
 };
 
@@ -59,16 +45,15 @@ export default function OfflineSMS() {
   const [selected, setSelected] = useState("accident");
   const [message, setMessage] = useState("");
   const [location, setLocation] = useState(null);
-  const [status, setStatus] = useState(null); // "sending" | "success" | "error"
+  const [status, setStatus] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [recipient, setRecipient] = useState(DEFAULT_RECIPIENT);
   const [history, setHistory] = useState(
     JSON.parse(localStorage.getItem("offlineSMS_history") || "[]")
   );
   const lastUnsent = useRef(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [recipient, setRecipient] = useState(DEFAULT_RECIPIENT);
   const mounted = useRef(true);
 
-  // detect mobile (used for behavior & sms: uri)
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   useEffect(() => {
@@ -76,13 +61,10 @@ export default function OfflineSMS() {
     window.addEventListener("online", updateStatus);
     window.addEventListener("offline", updateStatus);
 
-    // auto-retry last unsent once back online
     if (isOnline && lastUnsent.current) {
-      // attempt resend automatically only once
       const msg = lastUnsent.current;
       lastUnsent.current = null;
       sendViaApi(msg).catch(() => {
-        // if still fails, keep in lastUnsent so user can retry
         lastUnsent.current = msg;
       });
     }
@@ -94,7 +76,7 @@ export default function OfflineSMS() {
     };
   }, [isOnline]);
 
-  // fetch location once on mount and whenever user re-fetches
+  // 🌍 Fetch GPS location
   const fetchLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -116,51 +98,46 @@ export default function OfflineSMS() {
     fetchLocation();
   }, []);
 
-  // Build the final message text
+  // ✅ Build advanced message with maps link
   const buildMessageText = (customText) => {
     const template = TEMPLATES[selected];
-    const base = customText && customText.trim().length ? customText.trim() : template.body;
+    const base = customText?.trim().length ? customText.trim() : template.body;
     const time = new Date().toLocaleString();
-    const locText = location ? `\n📍 Location: ${location.lat}, ${location.lon}` : "";
-    return `${template.title}\n\n${base}\n\n🕒 ${time}${locText}\n\n(Automated via App)`;
+    const locText = location
+      ? `\n📍 Location: ${location.lat}, ${location.lon}\n🌐 Maps: https://maps.google.com/?q=${location.lat},${location.lon}`
+      : "";
+    return `${template.title}\n\n${base}\n\n🕒 ${time}${locText}\n\n(Sent via Emergency App)`;
   };
 
-  // local history helper
+  // 🔄 Local history
   const pushHistory = (entry) => {
-    const next = [entry, ...history].slice(0, 10); // keep last 10
+    const next = [entry, ...history].slice(0, 10);
     setHistory(next);
     localStorage.setItem("offlineSMS_history", JSON.stringify(next));
   };
 
-  // Simulated API send - replace with real API call (e.g. fetch to backend which calls Twilio)
+  // ☁️ API send (simulate)
   const sendViaApi = async (msg) => {
     if (!isOnline) throw new Error("offline");
     setStatus("sending");
-    // simulate network latency & success/fail
-    await new Promise((res) => setTimeout(res, 900));
-    // simulate success (replace with fetch POST)
+    await new Promise((res) => setTimeout(res, 800));
     if (!mounted.current) return;
     setStatus("success");
     pushHistory({ ...msg, sentVia: "API", time: Date.now() });
-    // clear success badge after a short delay
-    setTimeout(() => setStatus(null), 1800);
+    setTimeout(() => setStatus(null), 1500);
     return true;
   };
 
-  // Offline path: open native SMS app via sms: URI (works on mobile). On desktop this may not work; fallback to copy/share.
+  // 📱 Offline → SMS App with maps link
   const openNativeSmsApp = (msg) => {
     const encoded = encodeURIComponent(msg.text);
-    // multiple recipients allowed by comma separation if necessary
     const uri = `sms:${recipient}?body=${encoded}`;
-    // try open
     try {
       window.location.href = uri;
-      setStatus("error"); // show yellow badge that user is in SMS app flow
-      pushHistory({ ...msg, sentVia: "SMS App (user)", time: Date.now() });
-      // vibrate a short pattern (if available)
-      if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-    } catch (e) {
-      // fallback: copy to clipboard and ask user to paste into their SMS app.
+      setStatus("error");
+      pushHistory({ ...msg, sentVia: "SMS App", time: Date.now() });
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    } catch {
       fallbackCopy(msg);
     }
   };
@@ -170,27 +147,23 @@ export default function OfflineSMS() {
       await navigator.clipboard.writeText(msg.text);
       setStatus("error");
       pushHistory({ ...msg, sentVia: "Clipboard", time: Date.now() });
-      alert("Message copied to clipboard. Paste it into your SMS app to send.");
-    } catch (err) {
-      alert("Could not copy message automatically. Please select and copy the text manually.");
+      alert("Message copied. Paste it in your SMS app.");
+    } catch {
+      alert("Could not copy automatically. Please copy manually.");
     }
   };
 
-  // main send function used by UI
+  // 🚀 Main send
   const send = async (opts = { via: "auto" }) => {
-    // build message object
     const txt = buildMessageText(message);
     const msg = { id: Date.now(), text: txt, recipient };
 
-    // If online prefer API
     if (isOnline && opts.via !== "sms-app") {
       try {
         await sendViaApi(msg);
         setMessage("");
         return;
       } catch (err) {
-        // If API failed despite being online, fall back to native SMS app or copy
-        console.warn("API send failed, falling back:", err);
         lastUnsent.current = msg;
         if (isMobile) {
           openNativeSmsApp(msg);
@@ -200,9 +173,8 @@ export default function OfflineSMS() {
             pushHistory({ ...msg, sentVia: "Share API", time: Date.now() });
             setStatus("success");
             setMessage("");
-            setTimeout(() => setStatus(null), 1500);
             return;
-          } catch (sErr) {
+          } catch {
             fallbackCopy(msg);
           }
         } else {
@@ -212,24 +184,22 @@ export default function OfflineSMS() {
       }
     }
 
-    // Offline / forced SMS app path
     if (!isOnline || opts.via === "sms-app" || isMobile) {
       openNativeSmsApp(msg);
-      setMessage(""); // clear local input (user still has to send manually)
+      setMessage("");
       return;
     }
 
-    // As a final attempt, try API (shouldn't hit here)
     try {
       await sendViaApi(msg);
       setMessage("");
-    } catch (err) {
+    } catch {
       lastUnsent.current = msg;
       fallbackCopy(msg);
     }
   };
 
-  // copy message to clipboard quickly
+  // 📋 Copy message
   const copyMessage = async () => {
     const txt = buildMessageText(message);
     try {
@@ -237,77 +207,58 @@ export default function OfflineSMS() {
       if (navigator.vibrate) navigator.vibrate(40);
       alert("Copied to clipboard");
     } catch {
-      alert("Copy failed — please select and copy manually");
+      alert("Copy failed. Please copy manually.");
     }
   };
 
-  // share via Web Share API (mobile/compatible browsers)
+  // 📤 Share message
   const shareMessage = async () => {
     const txt = buildMessageText(message);
     if (!navigator.share) {
-      alert("Share API not supported on this device");
+      alert("Share API not supported");
       return;
     }
     try {
       await navigator.share({ text: txt });
       pushHistory({ id: Date.now(), text: txt, sentVia: "Share API", time: Date.now() });
       setMessage("");
-    } catch (err) {
-      // user canceled or failed
-      console.warn("Share failed", err);
-    }
+    } catch {}
   };
 
-  // quick template select handler that populates message area
   const selectTemplate = (key) => {
     setSelected(key);
-    setMessage((prev) => {
-      // if user hasn't typed or message equals previous template, replace; else leave user text
-      const currentTemplateText = TEMPLATES[key].body;
-      return prev.trim().length ? prev : currentTemplateText;
-    });
+    setMessage((prev) => (prev.trim().length ? prev : TEMPLATES[key].body));
     setDropdownOpen(false);
   };
 
-  // present friendly formatted time for history
   const fmtTime = (ts) => new Date(ts).toLocaleString();
 
   return (
     <motion.div
       initial={{ y: 12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="p-5 bg-white/90 dark:bg-gray-800/80 border rounded-2xl shadow-xl max-w-xl mx-auto"
+      className="p-4 sm:p-6 bg-white/90 dark:bg-gray-900/90 border rounded-2xl shadow-lg max-w-lg w-full mx-auto"
     >
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <WifiOff className={`text-${isOnline ? "green" : "red"}-500`} size={18} />
-            Emergency Quick-Send
-          </h3>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            Choose type → attach location → Send instantly. Offline opens your phone's SMS app.
-          </p>
-        </div>
-
-        <div className="text-right">
-          <div className="text-xs text-gray-500 dark:text-gray-300">{isOnline ? "Online" : "Offline"}</div>
-          <div className="text-sm font-medium text-gray-700 dark:text-gray-200">{recipient}</div>
+      {/* Header */}
+      <header className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          {isOnline ? <Wifi className="text-green-500" /> : <WifiOff className="text-red-500" />}
+          Emergency Quick-Send
+        </h3>
+        <div className="text-xs text-gray-600 dark:text-gray-400">
+          {isOnline ? "Online" : "Offline"}
         </div>
       </header>
 
-      {/* template selector */}
+      {/* Template Selector */}
       <div className="mt-4 relative">
         <button
           onClick={() => setDropdownOpen((s) => !s)}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700"
-          aria-haspopup="listbox"
-          aria-expanded={dropdownOpen}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800"
         >
           <div className="text-left">
-            <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-              {TEMPLATES[selected].title}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{TEMPLATES[selected].body}</div>
+            <div className="text-sm font-semibold">{TEMPLATES[selected].title}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{TEMPLATES[selected].body}</div>
           </div>
           <ChevronDown size={18} />
         </button>
@@ -318,8 +269,7 @@ export default function OfflineSMS() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="absolute z-20 left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800/90 border rounded-lg shadow-lg p-2"
-              role="listbox"
+              className="absolute z-20 left-0 right-0 mt-2 bg-white dark:bg-gray-800 border rounded-lg shadow-lg p-2 max-h-60 overflow-y-auto"
             >
               {Object.keys(TEMPLATES).map((k) => (
                 <li key={k}>
@@ -327,10 +277,8 @@ export default function OfflineSMS() {
                     onClick={() => selectTemplate(k)}
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                      {TEMPLATES[k].title}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-300">{TEMPLATES[k].body}</div>
+                    <div className="text-sm font-medium">{TEMPLATES[k].title}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{TEMPLATES[k].body}</div>
                   </button>
                 </li>
               ))}
@@ -339,35 +287,34 @@ export default function OfflineSMS() {
         </AnimatePresence>
       </div>
 
-      {/* message editor */}
+      {/* Message Box */}
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder={TEMPLATES[selected].body}
-        className="w-full mt-3 p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm min-h-[96px]"
+        className="w-full mt-3 p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm min-h-[100px]"
       />
 
-      {/* location + actions row */}
-      <div className="mt-3 flex items-center gap-2">
+      {/* Location + Actions */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           onClick={fetchLocation}
-          className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs"
-          title="Fetch location"
+          className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs"
         >
-          <MapPin size={16} /> {location ? `${location.lat}, ${location.lon}` : "Fetch Location"}
+          <MapPin size={16} />{" "}
+          {location ? `${location.lat}, ${location.lon}` : "Get Location"}
         </button>
 
         <input
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border dark:border-gray-600 bg-white dark:bg-gray-800 text-xs"
-          placeholder="Recipient number (e.g. +911234567890)"
+          className="flex-1 px-3 py-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+          placeholder="Recipient (e.g. +911234567890)"
         />
 
         <button
           onClick={copyMessage}
           className="px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
-          title="Copy message"
         >
           <Copy size={16} />
         </button>
@@ -375,14 +322,13 @@ export default function OfflineSMS() {
         <button
           onClick={shareMessage}
           className="px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
-          title="Share message"
         >
           <Share2 size={16} />
         </button>
       </div>
 
-      {/* send controls */}
-      <div className="mt-4 flex items-center gap-2">
+      {/* Send Buttons */}
+      <div className="mt-4 flex flex-wrap gap-2">
         <button
           onClick={() => send({ via: "auto" })}
           disabled={status === "sending"}
@@ -391,20 +337,18 @@ export default function OfflineSMS() {
           }`}
         >
           {status === "sending" ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
-          {status === "sending" ? "Sending..." : isOnline ? "Send Now (API)" : "Send via SMS App"}
+          {status === "sending" ? "Sending..." : isOnline ? "Send (API)" : "Send (SMS App)"}
         </button>
 
-        {/* explicit open SMS app for user if wanted */}
         <button
           onClick={() => send({ via: "sms-app" })}
           className="px-3 py-2 rounded-lg border bg-white dark:bg-gray-700"
-          title="Open SMS app"
         >
           <PhoneCall size={16} />
         </button>
       </div>
 
-      {/* inline status badges */}
+      {/* Status Messages */}
       <AnimatePresence>
         {status === "success" && (
           <motion.div
@@ -416,7 +360,6 @@ export default function OfflineSMS() {
             <CheckCircle2 size={14} /> Sent successfully
           </motion.div>
         )}
-
         {status === "error" && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -429,33 +372,32 @@ export default function OfflineSMS() {
         )}
       </AnimatePresence>
 
-      {/* small history (not pending) */}
+      {/* History */}
       {history.length > 0 && (
         <div className="mt-5">
-          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">Recent activity</h4>
+          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Recent activity
+          </h4>
           <ul className="space-y-2 text-xs">
             {history.map((h) => (
               <li
                 key={h.id || h.time}
-                className="p-2 rounded bg-gray-50 dark:bg-gray-700 flex items-start justify-between"
+                className="p-2 rounded bg-gray-50 dark:bg-gray-800 flex items-start justify-between"
               >
                 <div className="flex-1">
-                  <div className="text-[11px] text-gray-800 dark:text-gray-100 line-clamp-3">{h.text}</div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-300 mt-1">
-                    {fmtTime(h.time)} • {h.sentVia || "Unknown"}
+                  <div className="text-[11px] text-gray-800 dark:text-gray-200 line-clamp-3">
+                    {h.text}
+                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                    {fmtTime(h.time)} • {h.sentVia}
                   </div>
                 </div>
-                <div className="ml-2 flex flex-col gap-1">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(h.text);
-                      alert("Copied to clipboard");
-                    }}
-                    className="px-2 py-1 rounded bg-white dark:bg-gray-600 text-xs"
-                  >
-                    Copy
-                  </button>
-                </div>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(h.text)}
+                  className="ml-2 px-2 py-1 rounded bg-white dark:bg-gray-700"
+                >
+                  Copy
+                </button>
               </li>
             ))}
           </ul>
