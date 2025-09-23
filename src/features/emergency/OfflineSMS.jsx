@@ -127,10 +127,7 @@ export default function OfflineSMS() {
   const [online, setOnline] = useState(navigator.onLine);
   const [selected, setSelected] = useState('accident');
   const [message, setMessage] = useState('');
-
-  // location state now includes source and accuracy
-  const [location, setLocation] = useState(null); // { lat, lon, accuracy }
-  const [locationSource, setLocationSource] = useState(null); // 'gps' | 'cache' | 'manual'
+  const [location, setLocation] = useState(null);
   const [locLoading, setLocLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -141,7 +138,6 @@ export default function OfflineSMS() {
 
   const mounted = useRef(true);
   const watchId = useRef(null);
-  const gpsRetryTimer = useRef(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -154,11 +150,6 @@ export default function OfflineSMS() {
       const all = await idbGetAll();
       const hist = (all || []).filter(x => x.sentVia).sort((a,b) => b.time - a.time).slice(0, 50);
       const pend = (JSON.parse(localStorage.getItem('pendingSMS') || '[]')) || [];
-      const cachedLoc = JSON.parse(localStorage.getItem('lastLocation') || 'null');
-      if (cachedLoc) {
-        setLocation(cachedLoc);
-        setLocationSource('cache');
-      }
       setHistory(hist);
       setPending(pend);
     })();
@@ -168,15 +159,13 @@ export default function OfflineSMS() {
       setSwRegistered(!!reg);
     })();
 
-    // try a GPS lock on mount (improved offline strategy)
-    ensureGpsLock({ aggressive: true, maxAttempts: 4 });
+    startWatchingLocation();
 
     return () => {
       mounted.current = false;
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
       stopWatchingLocation();
-      if (gpsRetryTimer.current) clearTimeout(gpsRetryTimer.current);
     };
   }, []);
 
@@ -184,92 +173,20 @@ export default function OfflineSMS() {
     if (online && pending.length) flushPending();
   }, [online]);
 
-  // --- Advanced offline-friendly location strategy ---
-  // 1) Try navigator.geolocation.getCurrentPosition with highAccuracy and a long timeout
-  // 2) Start watchPosition (keeps GPS chip active) and update lastLocation
-  // 3) If fails, fallback to last saved coordinates (cache)
-  // 4) If user wants, allow manual entry
-
-  async function ensureGpsLock(opts = { aggressive: false, maxAttempts: 3 }) {
-    if (!('geolocation' in navigator)) return;
-    let attempts = 0;
-
-    const tryOnce = () => new Promise((resolve) => {
-      if (!('geolocation' in navigator)) return resolve(false);
-      const got = (pos) => {
-        const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)), accuracy: pos.coords.accuracy };
-        setLocation(loc);
-        setLocationSource('gps');
-        localStorage.setItem('lastLocation', JSON.stringify(loc));
-        setLocLoading(false);
-        resolve(true);
-      };
-      const fail = () => {
-        setLocLoading(false);
-        resolve(false);
-      };
-
-      setLocLoading(true);
-      try {
-        navigator.geolocation.getCurrentPosition(got, fail, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-      } catch (e) {
-        setLocLoading(false);
-        resolve(false);
-      }
-    });
-
-    const loop = async () => {
-      attempts = 0;
-      let success = false;
-      while (attempts < opts.maxAttempts && !success && mounted.current) {
-        attempts++;
-        success = await tryOnce();
-        if (!success && opts.aggressive) {
-          // if aggressive, also start watchPosition for continuous updates while retrying
-          startWatchingLocation();
-        }
-        if (!success && attempts < opts.maxAttempts) {
-          // exponential backoff before next try (useful when device is acquiring GPS)
-          const wait = 2000 * Math.pow(2, attempts - 1);
-          await new Promise(r => { gpsRetryTimer.current = setTimeout(r, wait); });
-        }
-      }
-
-      // if still not success, fallback to cache
-      if (!success) {
-        const cached = JSON.parse(localStorage.getItem('lastLocation') || 'null');
-        if (cached) {
-          setLocation(cached);
-          setLocationSource('cache');
-        } else {
-          setLocation(null);
-          setLocationSource(null);
-        }
-      }
-    };
-
-    loop();
-  }
-
   function startWatchingLocation() {
     if (!('geolocation' in navigator)) return;
     try {
       setLocLoading(true);
-      // keep watchPosition running so GPS chip remains active; update lastLocation when we get good fixes
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
-          const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)), accuracy: pos.coords.accuracy };
+          const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)) };
           setLocation(loc);
-          setLocationSource('gps');
           localStorage.setItem('lastLocation', JSON.stringify(loc));
           setLocLoading(false);
         },
         () => {
-          const cache = JSON.parse(localStorage.getItem('lastLocation') || 'null');
-          if (cache) {
-            setLocation(cache);
-            setLocationSource('cache');
-          }
+          const cache = localStorage.getItem('lastLocation');
+          if (cache) setLocation(JSON.parse(cache));
           setLocLoading(false);
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
@@ -286,20 +203,12 @@ export default function OfflineSMS() {
     }
   }
 
-  function setManualLocation(lat, lon) {
-    const loc = { lat: Number(Number(lat).toFixed(6)), lon: Number(Number(lon).toFixed(6)), accuracy: null };
-    setLocation(loc);
-    setLocationSource('manual');
-    localStorage.setItem('lastLocation', JSON.stringify(loc));
-  }
-
   const buildMessageText = (customText) => {
     const template = TEMPLATES[selected];
     const base = customText?.trim().length ? customText.trim() : template.body;
     const time = new Date().toLocaleString();
     const loc = location || JSON.parse(localStorage.getItem('lastLocation') || 'null');
-    const sourceLabel = locationSource ? `Source:${locationSource}` : '';
-    const locPart = loc ? `\n📍 Location: ${loc.lat}, ${loc.lon}\n${sourceLabel}\n🌐 Maps: ${buildMapsLink(loc.lat, loc.lon)}` : '\n📍 Location: Not available (GPS error)';
+    const locPart = loc ? `\n📍 Location: ${loc.lat}, ${loc.lon}\n🌐 Maps: ${buildMapsLink(loc.lat, loc.lon)}` : '\n📍 Location: Not available (GPS error)';
     return `${template.title}\n\n${base}\n\n🕒 ${time}${locPart}\n\n(Sent via Emergency App)`;
   };
 
@@ -345,8 +254,7 @@ export default function OfflineSMS() {
   };
 
   const send = async (opts = { via: 'auto' }) => {
-    // ensure we have something: try a quick GPS lock if we don't have any location
-    if (!location && !locLoading) await ensureGpsLock({ aggressive: false, maxAttempts: 2 });
+    if (!location && !locLoading) startWatchingLocation();
     const txt = buildMessageText(message);
     const msg = { id: Date.now() + Math.floor(Math.random()*1000), text: txt, recipient, createdAt: Date.now() };
     if (online && opts.via !== 'sms-app') {
@@ -407,6 +315,8 @@ export default function OfflineSMS() {
     setDropdownOpen(false);
   };
 
+  const fmtTime = (ts) => new Date(ts).toLocaleString();
+
   return (
     <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 bg-white border rounded-2xl shadow-xl max-w-2xl w-full mx-auto">
       <header className="flex items-center justify-between">
@@ -448,26 +358,16 @@ export default function OfflineSMS() {
       <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={TEMPLATES[selected].body} className="w-full mt-3 p-3 rounded-lg border bg-gray-50 text-sm min-h-[120px] focus:ring-2 focus:ring-sky-400 outline-none" />
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button onClick={() => ensureGpsLock({ aggressive: true, maxAttempts: 4 })} className="flex items-center gap-1 px-4 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-medium hover:bg-sky-100 transition">
+        <button onClick={() => startWatchingLocation()} className="flex items-center gap-1 px-4 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-medium hover:bg-sky-100 transition">
           {locLoading ? <Loader2 className="animate-spin" size={16} /> : <MapPin size={16} />}
-          {location ? `${location.lat}, ${location.lon} (${locationSource || 'unknown'})` : 'Get Location'}
+          {location ? `${location.lat}, ${location.lon}` : 'Get Location'}
         </button>
 
         <div className="flex-1 min-w-[160px]">
           <input value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white text-xs" placeholder="Recipient (e.g. +911234567890)" />
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={() => {
-            const manual = prompt('Enter coordinates as lat,lon (e.g. 12.9716,77.5946)');
-            if (!manual) return;
-            const [la, lo] = manual.split(',').map(s => s && s.trim());
-            if (!la || !lo || Number.isNaN(Number(la)) || Number.isNaN(Number(lo))) { alert('Invalid coords'); return; }
-            setManualLocation(la, lo);
-          }} className="px-3 py-2 bg-white border rounded-lg text-xs">Manual</button>
-
-          <button onClick={shareMessage} className="px-3 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg hover:bg-sky-100 transition"><Share2 size={16} /></button>
-        </div>
+        <button onClick={shareMessage} className="px-3 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg hover:bg-sky-100 transition"><Share2 size={16} /></button>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -526,3 +426,5 @@ export default function OfflineSMS() {
 }
 
 function fmtTime(ts) { return new Date(ts).toLocaleString(); }
+
+/* service worker should be a separate /sw.js file placed in public root */
