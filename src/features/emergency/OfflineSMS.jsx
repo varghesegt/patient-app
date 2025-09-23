@@ -96,6 +96,11 @@ function buildMapsLink(lat, lon) {
   return `https://maps.google.com/?q=${lat},${lon}`;
 }
 
+function buildGeoUri(lat, lon, label = 'Emergency') {
+  // geo URI works on many Android devices: geo:lat,lon?q=lat,lon(label)
+  return `geo:${lat},${lon}?q=${lat},${lon}(${encodeURIComponent(label)})`;
+}
+
 function splitSms(text) {
   if (!text) return [];
   const parts = [];
@@ -128,8 +133,7 @@ export default function OfflineSMS() {
   const [selected, setSelected] = useState('accident');
   const [message, setMessage] = useState('');
 
-  // location state now includes source and accuracy
-  const [location, setLocation] = useState(null); // { lat, lon, accuracy }
+  const [location, setLocation] = useState(null); // { lat, lon, accuracy, ts }
   const [locationSource, setLocationSource] = useState(null); // 'gps' | 'cache' | 'manual'
   const [locLoading, setLocLoading] = useState(false);
   const [status, setStatus] = useState(null);
@@ -168,7 +172,6 @@ export default function OfflineSMS() {
       setSwRegistered(!!reg);
     })();
 
-    // try a GPS lock on mount (improved offline strategy)
     ensureGpsLock({ aggressive: true, maxAttempts: 4 });
 
     return () => {
@@ -184,81 +187,76 @@ export default function OfflineSMS() {
     if (online && pending.length) flushPending();
   }, [online]);
 
-  // --- Advanced offline-friendly location strategy ---
-  // 1) Try navigator.geolocation.getCurrentPosition with highAccuracy and a long timeout
-  // 2) Start watchPosition (keeps GPS chip active) and update lastLocation
-  // 3) If fails, fallback to last saved coordinates (cache)
-  // 4) If user wants, allow manual entry
+  // Aggressive high-accuracy capture: tries getCurrentPosition, then watches until accuracy threshold or timeout.
+  async function captureHighAccuracyLocation({ timeout = 12000, targetAccuracy = 50 } = {}) {
+    if (!('geolocation' in navigator)) return null;
 
-  async function ensureGpsLock(opts = { aggressive: false, maxAttempts: 3 }) {
-    if (!('geolocation' in navigator)) return;
-    let attempts = 0;
-
-    const tryOnce = () => new Promise((resolve) => {
-      if (!('geolocation' in navigator)) return resolve(false);
-      const got = (pos) => {
-        const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)), accuracy: pos.coords.accuracy };
-        setLocation(loc);
-        setLocationSource('gps');
-        localStorage.setItem('lastLocation', JSON.stringify(loc));
-        setLocLoading(false);
-        resolve(true);
-      };
-      const fail = () => {
-        setLocLoading(false);
-        resolve(false);
+    return new Promise((resolve) => {
+      let resolved = false;
+      let localWatchId = null;
+      const finish = (loc) => {
+        if (resolved) return;
+        resolved = true;
+        if (localWatchId != null && 'geolocation' in navigator) navigator.geolocation.clearWatch(localWatchId);
+        resolve(loc);
       };
 
-      setLocLoading(true);
+      const onSuccess = (pos) => {
+        const loc = {
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lon: Number(pos.coords.longitude.toFixed(6)),
+          accuracy: pos.coords.accuracy,
+          ts: Date.now(),
+        };
+        // if accuracy good enough, finish immediately
+        if (loc.accuracy != null && loc.accuracy <= targetAccuracy) {
+          setLocation(loc);
+          setLocationSource('gps');
+          localStorage.setItem('lastLocation', JSON.stringify(loc));
+          finish(loc);
+        } else {
+          // keep watching; accept this if we run out of time
+          setLocation(loc);
+          setLocationSource('gps');
+          localStorage.setItem('lastLocation', JSON.stringify(loc));
+        }
+      };
+
+      const onError = () => {
+        // ignore here, allow fallback below
+      };
+
       try {
-        navigator.geolocation.getCurrentPosition(got, fail, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-      } catch (e) {
-        setLocLoading(false);
-        resolve(false);
-      }
-    });
+        // try a single immediate attempt first
+        navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: true, timeout: Math.min(8000, timeout), maximumAge: 0 });
+      } catch (e) {}
 
-    const loop = async () => {
-      attempts = 0;
-      let success = false;
-      while (attempts < opts.maxAttempts && !success && mounted.current) {
-        attempts++;
-        success = await tryOnce();
-        if (!success && opts.aggressive) {
-          // if aggressive, also start watchPosition for continuous updates while retrying
-          startWatchingLocation();
-        }
-        if (!success && attempts < opts.maxAttempts) {
-          // exponential backoff before next try (useful when device is acquiring GPS)
-          const wait = 2000 * Math.pow(2, attempts - 1);
-          await new Promise(r => { gpsRetryTimer.current = setTimeout(r, wait); });
-        }
-      }
+      try {
+        // start watch so device keeps GPS active and we can get updated accuracy
+        localWatchId = navigator.geolocation.watchPosition(onSuccess, onError, { enableHighAccuracy: true, maximumAge: 0, timeout: timeout });
+      } catch (e) {}
 
-      // if still not success, fallback to cache
-      if (!success) {
+      // timeout fallback: resolve with cached loc or last seen loc
+      gpsRetryTimer.current = setTimeout(() => {
         const cached = JSON.parse(localStorage.getItem('lastLocation') || 'null');
         if (cached) {
           setLocation(cached);
           setLocationSource('cache');
+          finish(cached);
         } else {
-          setLocation(null);
-          setLocationSource(null);
+          finish(null);
         }
-      }
-    };
-
-    loop();
+      }, timeout);
+    });
   }
 
   function startWatchingLocation() {
     if (!('geolocation' in navigator)) return;
     try {
       setLocLoading(true);
-      // keep watchPosition running so GPS chip remains active; update lastLocation when we get good fixes
       watchId.current = navigator.geolocation.watchPosition(
         (pos) => {
-          const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)), accuracy: pos.coords.accuracy };
+          const loc = { lat: Number(pos.coords.latitude.toFixed(6)), lon: Number(pos.coords.longitude.toFixed(6)), accuracy: pos.coords.accuracy, ts: Date.now() };
           setLocation(loc);
           setLocationSource('gps');
           localStorage.setItem('lastLocation', JSON.stringify(loc));
@@ -287,19 +285,24 @@ export default function OfflineSMS() {
   }
 
   function setManualLocation(lat, lon) {
-    const loc = { lat: Number(Number(lat).toFixed(6)), lon: Number(Number(lon).toFixed(6)), accuracy: null };
+    const loc = { lat: Number(Number(lat).toFixed(6)), lon: Number(Number(lon).toFixed(6)), accuracy: null, ts: Date.now() };
     setLocation(loc);
     setLocationSource('manual');
     localStorage.setItem('lastLocation', JSON.stringify(loc));
   }
 
-  const buildMessageText = (customText) => {
+  const buildMessageText = (customText, locSnapshot = null) => {
     const template = TEMPLATES[selected];
     const base = customText?.trim().length ? customText.trim() : template.body;
     const time = new Date().toLocaleString();
-    const loc = location || JSON.parse(localStorage.getItem('lastLocation') || 'null');
+
+    const loc = locSnapshot || location || JSON.parse(localStorage.getItem('lastLocation') || 'null');
     const sourceLabel = locationSource ? `Source:${locationSource}` : '';
-    const locPart = loc ? `\n📍 Location: ${loc.lat}, ${loc.lon}\n${sourceLabel}\n🌐 Maps: ${buildMapsLink(loc.lat, loc.lon)}` : '\n📍 Location: Not available (GPS error)';
+
+    const locPart = loc
+      ? `\n📍 Location: ${loc.lat}, ${loc.lon}\n${sourceLabel}${loc.accuracy ? ` • acc:${Math.round(loc.accuracy)}m` : ''}\n🌐 Maps: ${buildMapsLink(loc.lat, loc.lon)}\ngeo:${loc.lat},${loc.lon}`
+      : '\n📍 Location: Not available (GPS error)';
+
     return `${template.title}\n\n${base}\n\n🕒 ${time}${locPart}\n\n(Sent via Emergency App)`;
   };
 
@@ -334,21 +337,58 @@ export default function OfflineSMS() {
     return true;
   };
 
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {}
+    // fallback: create textarea and copy
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    } catch (e) { return false; }
+  }
+
   const openNativeSmsApp = async (msg) => {
     const uri = buildSmsUri(msg.recipient, msg.text);
+    let opened = false;
     try {
+      // try to open SMS intent
       window.location.href = uri;
+      opened = true;
       await pushHistory({ ...msg, sentVia: 'SMS App', time: Date.now() });
       if (navigator.vibrate) navigator.vibrate([60,40]);
       return true;
-    } catch { return false; }
+    } catch (e) {
+      opened = false;
+    }
+
+    // if opening failed, copy to clipboard and inform user
+    const copied = await copyToClipboard(msg.text);
+    if (copied) alert('Message copied to clipboard. Paste into your SMS app and send.');
+    else alert('Could not open SMS app and could not copy automatically. Please copy the message manually.');
+    await pushHistory({ ...msg, sentVia: 'Queued (User-copy)', time: Date.now() });
+    return false;
   };
 
   const send = async (opts = { via: 'auto' }) => {
-    // ensure we have something: try a quick GPS lock if we don't have any location
-    if (!location && !locLoading) await ensureGpsLock({ aggressive: false, maxAttempts: 2 });
-    const txt = buildMessageText(message);
-    const msg = { id: Date.now() + Math.floor(Math.random()*1000), text: txt, recipient, createdAt: Date.now() };
+    // try to get a better lock (short) when about to send
+    if (!location || (location && location.accuracy && location.accuracy > 80)) {
+      await captureHighAccuracyLocation({ timeout: 8000, targetAccuracy: 60 });
+    }
+
+    // snapshot location at send time
+    const locSnapshot = location || JSON.parse(localStorage.getItem('lastLocation') || 'null');
+    const txt = buildMessageText(message, locSnapshot);
+    const msg = { id: Date.now() + Math.floor(Math.random()*1000), text: txt, recipient, createdAt: Date.now(), locationSnapshot: locSnapshot };
+
     if (online && opts.via !== 'sms-app') {
       try {
         await sendViaApi(msg);
@@ -361,10 +401,10 @@ export default function OfflineSMS() {
         return;
       }
     }
+
     const didOpen = await openNativeSmsApp(msg);
     if (!didOpen) {
       queuePending(msg);
-      alert('Could not open SMS app. Message has been queued locally and will be sent when connection is restored.');
     }
     setMessage('');
   };
@@ -379,8 +419,24 @@ export default function OfflineSMS() {
     }
   };
 
+  const retryPendingViaApi = async (p) => {
+    try {
+      await sendViaApi(p);
+      await removePendingById(p.id);
+      alert('Pending message sent via API');
+    } catch (e) {
+      alert('Failed to send via API');
+    }
+  };
+
+  const openPendingInSms = async (p) => {
+    const ok = await openNativeSmsApp(p);
+    if (ok) await removePendingById(p.id);
+  };
+
   const shareMessage = async () => {
-    const txt = buildMessageText(message);
+    const locSnapshot = location || JSON.parse(localStorage.getItem('lastLocation') || 'null');
+    const txt = buildMessageText(message, locSnapshot);
     if (!navigator.share) { alert('Share API not supported'); return; }
     try {
       await navigator.share({ text: txt });
@@ -495,7 +551,9 @@ export default function OfflineSMS() {
                   <div className="text-[10px] text-gray-500 mt-1">Queued locally • {new Date(p.createdAt || p.id).toLocaleString()}</div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <button onClick={() => flushPending()} className="text-blue-600 text-xs flex items-center gap-1"><RefreshCw size={12} /> Retry all</button>
+                  <button onClick={() => retryPendingViaApi(p)} className="text-blue-600 text-xs flex items-center gap-1">Retry (API)</button>
+                  <button onClick={() => openPendingInSms(p)} className="text-gray-600 text-xs flex items-center gap-1">Open SMS</button>
+                  <button onClick={() => (async () => { await copyToClipboard(p.text); alert('Copied pending message to clipboard'); })()} className="text-gray-600 text-xs flex items-center gap-1">Copy</button>
                   <button onClick={() => editPending(p.id)} className="text-gray-600 text-xs flex items-center gap-1"><Edit2 size={12} /> Edit</button>
                   <button onClick={() => deletePending(p.id)} className="text-red-500 text-xs flex items-center gap-1"><Trash2 size={12} /> Delete</button>
                 </div>
