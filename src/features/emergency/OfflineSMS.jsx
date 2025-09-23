@@ -43,6 +43,7 @@ export default function OfflineSMS() {
   const [selected, setSelected] = useState("accident");
   const [message, setMessage] = useState("");
   const [location, setLocation] = useState(null);
+  const [locLoading, setLocLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [recipient, setRecipient] = useState(DEFAULT_RECIPIENT);
@@ -54,6 +55,7 @@ export default function OfflineSMS() {
 
   const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // 🌍 Auto update online/offline
   useEffect(() => {
     const updateStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener("online", updateStatus);
@@ -77,30 +79,36 @@ export default function OfflineSMS() {
   // 🌍 Fetch GPS location
   const fetchLocation = () => {
     if (!navigator.geolocation) return;
+    setLocLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocation({
+        const loc = {
           lat: pos.coords.latitude.toFixed(5),
           lon: pos.coords.longitude.toFixed(5),
-        });
+        };
+        setLocation(loc);
+        setLocLoading(false);
       },
-      () => setLocation(null),
+      () => {
+        setLocation(null);
+        setLocLoading(false);
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
 
   useEffect(() => {
-    fetchLocation();
+    fetchLocation(); // fetch once on mount
   }, []);
 
-  // ✅ Build advanced message with maps link always included
+  // ✅ Build message text with location always included
   const buildMessageText = (customText) => {
     const template = TEMPLATES[selected];
     const base = customText?.trim().length ? customText.trim() : template.body;
     const time = new Date().toLocaleString();
     const locText = location
       ? `\n📍 Location: ${location.lat}, ${location.lon}\n🌐 Maps: https://maps.google.com/?q=${location.lat},${location.lon}`
-      : "\n📍 Location not available";
+      : "\n📍 Location: Not available (GPS error)";
     return `${template.title}\n\n${base}\n\n🕒 ${time}${locText}\n\n(Sent via Emergency App)`;
   };
 
@@ -114,7 +122,7 @@ export default function OfflineSMS() {
   const sendViaApi = async (msg) => {
     if (!isOnline) throw new Error("offline");
     setStatus("sending");
-    await new Promise((res) => setTimeout(res, 800));
+    await new Promise((res) => setTimeout(res, 1000));
     if (!mounted.current) return;
     setStatus("success");
     pushHistory({ ...msg, sentVia: "API", time: Date.now() });
@@ -122,7 +130,7 @@ export default function OfflineSMS() {
     return true;
   };
 
-  // 📱 Offline → SMS App with maps link
+  // 📱 Native SMS app fallback
   const openNativeSmsApp = (msg) => {
     const encoded = encodeURIComponent(msg.text);
     const uri = `sms:${recipient}?body=${encoded}`;
@@ -136,8 +144,13 @@ export default function OfflineSMS() {
     }
   };
 
-  // 🚀 Main send
+  // 🚀 Send message with auto fallback
   const send = async (opts = { via: "auto" }) => {
+    // ensure latest location before sending
+    if (!location && !locLoading) {
+      fetchLocation();
+    }
+
     const txt = buildMessageText(message);
     const msg = { id: Date.now(), text: txt, recipient };
 
@@ -165,19 +178,9 @@ export default function OfflineSMS() {
       }
     }
 
-    if (!isOnline || opts.via === "sms-app" || isMobile) {
-      openNativeSmsApp(msg);
-      setMessage("");
-      return;
-    }
-
-    try {
-      await sendViaApi(msg);
-      setMessage("");
-    } catch {
-      lastUnsent.current = msg;
-      openNativeSmsApp(msg);
-    }
+    // offline or SMS fallback
+    openNativeSmsApp(msg);
+    setMessage("");
   };
 
   const shareMessage = async () => {
@@ -271,7 +274,11 @@ export default function OfflineSMS() {
           onClick={fetchLocation}
           className="flex items-center gap-1 px-4 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-medium hover:bg-sky-100 transition"
         >
-          <MapPin size={16} />
+          {locLoading ? (
+            <Loader2 className="animate-spin" size={16} />
+          ) : (
+            <MapPin size={16} />
+          )}
           {location ? `${location.lat}, ${location.lon}` : "Get Location"}
         </button>
 
