@@ -10,6 +10,7 @@ import {
   WifiOff,
   Wifi,
   History,
+  KeyRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import OfflineSMS from "../features/emergency/OfflineSMS";
@@ -32,7 +33,14 @@ export default function Emergency() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hiddenTypes, setHiddenTypes] = useState([]);
 
-  // Emergency types (static ref so not re-rendered)
+  // 🔑 OTP States
+  const [otpStep, setOtpStep] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
+  const [selectedType, setSelectedType] = useState(null);
+  const [useLiveLoc, setUseLiveLoc] = useState(true);
+
+  // Emergency types
   const emergencyTypesRef = useRef([
     { id: "accident", label: "Accident" },
     { id: "stroke", label: "Stroke" },
@@ -57,7 +65,6 @@ export default function Emergency() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline]);
 
   useEffect(() => {
@@ -70,13 +77,13 @@ export default function Emergency() {
 
   // ===== Helpers =====
   const saveToHistory = (data) =>
-    setHistory(([data, ...history].slice(0, 10)));
+    setHistory((prev) => [data, ...prev].slice(0, 10));
 
   const addToQueue = (data) =>
-    setSosQueue(([data, ...sosQueue].slice(0, 20)));
+    setSosQueue((prev) => [data, ...prev].slice(0, 20));
 
   const clearHistoryItem = (idx) =>
-    setHistory(history.filter((_, i) => i !== idx));
+    setHistory((prev) => prev.filter((_, i) => i !== idx));
 
   const clearQueue = () => setSosQueue([]);
 
@@ -100,17 +107,21 @@ export default function Emergency() {
   const fetchNearbyHospitals = async (lat, lng, radius = 5000) => {
     try {
       setLoadingHospitals(true);
-      const query = `[out:json][timeout:25];(
-        node[amenity=hospital](around:${radius},${lat},${lng});
-        way[amenity=hospital](around:${radius},${lat},${lng});
-        relation[amenity=hospital](around:${radius},${lat},${lng});
-      );out center 20;`;
+      const query = `[out:json][timeout:25];
+        (
+          node[amenity=hospital](around:${radius},${lat},${lng});
+          way[amenity=hospital](around:${radius},${lat},${lng});
+          relation[amenity=hospital](around:${radius},${lat},${lng});
+        );
+        out center 20;`;
 
       const res = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
         body: query,
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
+
+      if (!res.ok) throw new Error("Failed to fetch hospital data");
 
       const data = await res.json();
       const places = (data.elements || []).map((el) => ({
@@ -122,13 +133,15 @@ export default function Emergency() {
         tags: el.tags || {},
       }));
 
-      setNearbyHospitals({
-        gov: places.filter((p) => isGovernmentHospital(p.name)),
-        priv: places.filter((p) => !isGovernmentHospital(p.name)),
-      });
+      const gov = places.filter((p) => isGovernmentHospital(p.name));
+      const priv = places.filter((p) => !isGovernmentHospital(p.name));
+
+      setNearbyHospitals({ gov, priv });
+      return { gov, priv };
     } catch (err) {
       console.error("Hospital lookup failed:", err);
       setNearbyHospitals({ gov: [], priv: [] });
+      return { gov: [], priv: [] };
     } finally {
       setLoadingHospitals(false);
     }
@@ -154,6 +167,28 @@ export default function Emergency() {
     setSosQueue(remaining);
   };
 
+  const requestOtp = (type, useLive) => {
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(otp);
+    setOtpStep(true);
+    setSelectedType(type);
+    setUseLiveLoc(useLive);
+
+    console.log("Generated OTP:", otp);
+  };
+
+  const confirmOtpAndSend = async () => {
+    if (enteredOtp !== generatedOtp) {
+      alert("❌ Incorrect OTP. Please try again.");
+      return;
+    }
+    setOtpStep(false);
+    setEnteredOtp("");
+    setGeneratedOtp("");
+
+    await handleSOS(useLiveLoc, selectedType);
+  };
+
   const handleSOS = async (useLiveLocation, type = "other") => {
     try {
       setSending(true);
@@ -163,14 +198,20 @@ export default function Emergency() {
       let latitude, longitude;
 
       if (useLiveLocation) {
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+            });
           });
-        });
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+        } catch {
+          alert("⚠️ Location access denied. Please enable GPS or use manual input.");
+          setSending(false);
+          return;
+        }
       } else {
         latitude = parseFloat(manualLocation.lat);
         longitude = parseFloat(manualLocation.lng);
@@ -208,7 +249,9 @@ export default function Emergency() {
       }
 
       saveToHistory(sosData);
-      setHiddenTypes((prev) => [...prev, type]);
+      setHiddenTypes((prev) =>
+        prev.includes(type) ? prev : [...prev, type]
+      );
 
       setSending(false);
       setSent(true);
@@ -223,8 +266,9 @@ export default function Emergency() {
 
   const openModal = () => {
     setModalOpen(true);
-    navigator.geolocation.getCurrentPosition((pos) =>
-      fetchNearbyHospitals(pos.coords.latitude, pos.coords.longitude, 8000)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => fetchNearbyHospitals(pos.coords.latitude, pos.coords.longitude, 8000),
+      () => console.warn("Location access denied for hospitals lookup")
     );
   };
 
@@ -251,8 +295,7 @@ export default function Emergency() {
             Emergency Help
           </h2>
           <p className="mt-2 text-gray-600 dark:text-gray-300 text-base sm:text-lg">
-            Quick emergency actions. Select a type to send location + suggested
-            nearby hospitals. Government hospitals are shown first.
+            Quick emergency actions with OTP confirmation. Select a type, verify, and send location with nearby hospitals.
           </p>
           <div className="flex items-center justify-center mt-2 gap-2">
             {isOnline ? (
@@ -267,7 +310,7 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* SOS Main Button */}
+        {/* SOS Button */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -301,7 +344,7 @@ export default function Emergency() {
 
             {!sending && !sent && (
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Tap to choose emergency type & location.
+                Tap to choose emergency type & confirm with OTP.
               </p>
             )}
             {sending && (
@@ -317,103 +360,252 @@ export default function Emergency() {
           </div>
         </motion.div>
 
+        {/* ===== Modal: Emergency Selection + OTP ===== */}
         <AnimatePresence>
           {modalOpen && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl w-full max-w-2xl relative">
-                <button onClick={() => setModalOpen(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><X size={20} /></button>
-                <h4 className="text-lg font-semibold mb-4">Choose Emergency Type & Location</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="font-medium mb-2">Emergency Type</p>
-                    <div className="flex flex-wrap gap-2">
-                      {emergencyTypesRef.current.map((t) => {
-                        if (hiddenTypes.includes(t.id)) return null; // disappear after selecting
-                        return (
-                          <button key={t.id} onClick={() => handleSOS(true, t.id)} className="px-3 py-2 rounded-lg bg-red-600 text-white hover:opacity-90">
-                            {t.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl w-full max-w-2xl relative"
+              >
+                <button
+                  onClick={() => {
+                    setModalOpen(false);
+                    setOtpStep(false);
+                    setEnteredOtp("");
+                  }}
+                  className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={20} />
+                </button>
 
-                    <div className="mt-4">
-                      <p className="font-medium mb-2">Or use custom location</p>
-                      <input type="text" placeholder="Latitude" value={manualLocation.lat} onChange={(e) => setManualLocation({ ...manualLocation, lat: e.target.value })} className="border rounded p-2 w-full mb-2" />
-                      <input type="text" placeholder="Longitude" value={manualLocation.lng} onChange={(e) => setManualLocation({ ...manualLocation, lng: e.target.value })} className="border rounded p-2 w-full mb-2" />
-                      <div className="flex gap-2">
-                        <button onClick={() => handleSOS(false, 'other')} disabled={!manualLocation.lat || !manualLocation.lng} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">Send From Custom Location</button>
-                        <button onClick={() => {
-                          navigator.geolocation.getCurrentPosition((p)=>{
-                            setManualLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
-                          });
-                        }} className="px-4 py-2 bg-gray-200 rounded-lg">Use Current Loc</button>
+                {!otpStep ? (
+                  <>
+                    <h4 className="text-lg font-semibold mb-4">Choose Emergency Type & Location</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-medium mb-2">Emergency Type</p>
+                        <div className="flex flex-wrap gap-2">
+                          {emergencyTypesRef.current.map((t) => {
+                            if (hiddenTypes.includes(t.id)) return null;
+                            return (
+                              <button
+                                key={t.id}
+                                onClick={() => requestOtp(t.id, true)}
+                                className="px-3 py-2 rounded-lg bg-red-600 text-white hover:opacity-90"
+                              >
+                                {t.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="mt-4">
+                          <p className="font-medium mb-2">Or use custom location</p>
+                          <input
+                            type="text"
+                            placeholder="Latitude"
+                            value={manualLocation.lat}
+                            onChange={(e) =>
+                              setManualLocation({ ...manualLocation, lat: e.target.value })
+                            }
+                            className="border rounded p-2 w-full mb-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Longitude"
+                            value={manualLocation.lng}
+                            onChange={(e) =>
+                              setManualLocation({ ...manualLocation, lng: e.target.value })
+                            }
+                            className="border rounded p-2 w-full mb-2"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => requestOtp("other", false)}
+                              disabled={!manualLocation.lat || !manualLocation.lng}
+                              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+                            >
+                              Send From Custom Location
+                            </button>
+                            <button
+                              onClick={() => {
+                                navigator.geolocation.getCurrentPosition((p) => {
+                                  setManualLocation({
+                                    lat: p.coords.latitude,
+                                    lng: p.coords.longitude,
+                                  });
+                                });
+                              }}
+                              className="px-4 py-2 bg-gray-200 rounded-lg"
+                            >
+                              Use Current Loc
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div>
-                    <p className="font-medium mb-2">Nearby Hospitals (government first)</p>
-                    <div className="h-56 overflow-auto border rounded p-2">
-                      {loadingHospitals ? (
-                        <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Loading…</div>
-                      ) : (
-                        <>
-                          {nearbyHospitals.gov.length === 0 && nearbyHospitals.priv.length === 0 ? (
-                            <p className="text-sm text-gray-500">No hospitals found yet. Allow location and reopen modal or try again.</p>
+                      {/* Hospitals */}
+                      <div>
+                        <p className="font-medium mb-2">Nearby Hospitals (government first)</p>
+                        <div className="h-56 overflow-auto border rounded p-2">
+                          {loadingHospitals ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="animate-spin" /> Loading…
+                            </div>
                           ) : (
                             <>
-                              {nearbyHospitals.gov.length > 0 && (
-                                <div>
-                                  <p className="text-xs font-semibold text-green-700">Government Hospitals</p>
-                                  <ul className="space-y-2 mt-2">
-                                    {nearbyHospitals.gov.map((h) => (
-                                      <li key={h.id} className="flex justify-between items-start">
-                                        <div>
-                                          <div className="font-medium">{h.name || "Unnamed Gov Hospital"}</div>
-                                          <div className="text-xs text-gray-500">{h.addr}</div>
-                                        </div>
-                                        <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-sm text-blue-600">Map</a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
+                              {nearbyHospitals.gov.length === 0 &&
+                              nearbyHospitals.priv.length === 0 ? (
+                                <p className="text-sm text-gray-500">
+                                  No hospitals found yet. Allow location and reopen modal or try
+                                  again.
+                                </p>
+                              ) : (
+                                <>
+                                  {nearbyHospitals.gov.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-green-700">
+                                        Government Hospitals
+                                      </p>
+                                      <ul className="space-y-2 mt-2">
+                                        {nearbyHospitals.gov.map((h) => (
+                                          <li
+                                            key={h.id}
+                                            className="flex justify-between items-start"
+                                          >
+                                            <div>
+                                              <div className="font-medium">
+                                                {h.name || "Unnamed Gov Hospital"}
+                                              </div>
+                                              <div className="text-xs text-gray-500">{h.addr}</div>
+                                            </div>
+                                            <a
+                                              href={`https://maps.google.com/?q=${h.lat},${h.lng}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-sm text-blue-600"
+                                            >
+                                              Map
+                                            </a>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
 
-                              {nearbyHospitals.priv.length > 0 && (
-                                <div className="mt-4">
-                                  <p className="text-xs font-semibold text-gray-700">Private Hospitals</p>
-                                  <ul className="space-y-2 mt-2">
-                                    {nearbyHospitals.priv.map((h) => (
-                                      <li key={h.id} className="flex justify-between items-start">
-                                        <div>
-                                          <div className="font-medium">{h.name || "Unnamed Private Hospital"}</div>
-                                          <div className="text-xs text-gray-500">{h.addr}</div>
-                                        </div>
-                                        <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-sm text-blue-600">Map</a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
+                                  {nearbyHospitals.priv.length > 0 && (
+                                    <div className="mt-4">
+                                      <p className="text-xs font-semibold text-gray-700">
+                                        Private Hospitals
+                                      </p>
+                                      <ul className="space-y-2 mt-2">
+                                        {nearbyHospitals.priv.map((h) => (
+                                          <li
+                                            key={h.id}
+                                            className="flex justify-between items-start"
+                                          >
+                                            <div>
+                                              <div className="font-medium">
+                                                {h.name || "Unnamed Private Hospital"}
+                                              </div>
+                                              <div className="text-xs text-gray-500">{h.addr}</div>
+                                            </div>
+                                            <a
+                                              href={`https://maps.google.com/?q=${h.lat},${h.lng}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="text-sm text-blue-600"
+                                            >
+                                              Map
+                                            </a>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </>
                           )}
-                        </>
-                      )}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            onClick={() =>
+                              navigator.geolocation.getCurrentPosition((p) =>
+                                fetchNearbyHospitals(p.coords.latitude, p.coords.longitude, 8000)
+                              )
+                            }
+                            className="flex-1 px-3 py-2 rounded-lg bg-gray-100"
+                          >
+                            Refresh
+                          </button>
+                          <button
+                            onClick={() => setNearbyHospitals({ gov: [], priv: [] })}
+                            className="px-3 py-2 rounded-lg bg-gray-100"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 flex gap-2">
-                      <button onClick={() => navigator.geolocation.getCurrentPosition((p)=>fetchNearbyHospitals(p.coords.latitude, p.coords.longitude, 8000))} className="flex-1 px-3 py-2 rounded-lg bg-gray-100">Refresh</button>
-                      <button onClick={() => setNearbyHospitals({ gov: [], priv: [] })} className="px-3 py-2 rounded-lg bg-gray-100">Clear</button>
+                  </>
+                ) : (
+                  // OTP Step
+                  <div className="text-center">
+                    <KeyRound size={40} className="mx-auto text-red-600 mb-3" />
+                    <h4 className="text-lg font-bold mb-2">OTP Verification</h4>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter the OTP below to confirm SOS request.
+                    </p>
+                    <div className="bg-gray-100 p-3 rounded-lg inline-block mb-4 font-mono text-xl tracking-widest">
+                      {generatedOtp}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Enter OTP"
+                      value={enteredOtp}
+                      onChange={(e) => setEnteredOtp(e.target.value)}
+                      className="border p-2 rounded w-40 text-center text-lg tracking-wider"
+                    />
+                    <div className="mt-4 flex justify-center gap-3">
+                      <button
+                        onClick={confirmOtpAndSend}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                      >
+                        Confirm & Send
+                      </button>
+                      <button
+                        onClick={() => {
+                          setOtpStep(false);
+                          setEnteredOtp("");
+                        }}
+                        className="px-4 py-2 bg-gray-200 rounded-lg"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
-                </div>
+                )}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Offline & Queue */}
-        <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }} className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 p-6 rounded-2xl shadow-md">
+        {/* ===== Offline Queue ===== */}
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+          className="mt-8 bg-white/70 dark:bg-gray-800/60 backdrop-blur-lg border border-gray-200 dark:border-gray-700 p-6 rounded-2xl shadow-md"
+        >
           <OfflineSMS />
           <div className="mt-4">
             <div className="flex items-center justify-between">
@@ -423,13 +615,31 @@ export default function Emergency() {
             {sosQueue.length > 0 ? (
               <ul className="mt-3 space-y-2 text-sm">
                 {sosQueue.map((q, i) => (
-                  <li key={i} className="flex justify-between items-start border-b pb-1">
+                  <li
+                    key={i}
+                    className="flex justify-between items-start border-b pb-1"
+                  >
                     <div>
-                      <div className="font-medium">{q.type?.toUpperCase() || 'SOS'}</div>
-                      <div className="text-xs text-gray-500">{new Date(q.timestamp).toLocaleString()}</div>
+                      <div className="font-medium">
+                        {q.type?.toUpperCase() || "SOS"}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(q.timestamp).toLocaleString()}
+                      </div>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => { navigator.share && navigator.share({ title: 'SOS', text: `SOS: ${q.type} - https://maps.google.com/?q=${q.lat},${q.lng}` }); }} className="text-xs px-2 py-1 bg-gray-100 rounded">Share</button>
+                      <button
+                        onClick={() => {
+                          navigator.share &&
+                            navigator.share({
+                              title: "SOS",
+                              text: `SOS: ${q.type} - https://maps.google.com/?q=${q.lat},${q.lng}`,
+                            });
+                        }}
+                        className="text-xs px-2 py-1 bg-gray-100 rounded"
+                      >
+                        Share
+                      </button>
                     </div>
                   </li>
                 ))}
@@ -438,25 +648,58 @@ export default function Emergency() {
               <p className="text-sm text-gray-500 mt-2">No pending items</p>
             )}
             <div className="mt-3 flex gap-2">
-              <button onClick={flushQueue} className="px-3 py-2 bg-green-600 text-white rounded">Try Send Now</button>
-              <button onClick={clearQueue} className="px-3 py-2 bg-gray-200 rounded">Clear Queue</button>
+              <button
+                onClick={flushQueue}
+                className="px-3 py-2 bg-green-600 text-white rounded"
+              >
+                Try Send Now
+              </button>
+              <button
+                onClick={clearQueue}
+                className="px-3 py-2 bg-gray-200 rounded"
+              >
+                Clear Queue
+              </button>
             </div>
           </div>
         </motion.div>
 
-        {/* SOS History */}
+        {/* ===== History ===== */}
         {history.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.6 }} className="mt-8 bg-white/80 dark:bg-gray-800/70 p-5 rounded-xl shadow-md">
-            <h4 className="flex items-center gap-2 font-semibold mb-3"><History size={18} /> Last SOS Requests</h4>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="mt-8 bg-white/80 dark:bg-gray-800/70 p-5 rounded-xl shadow-md"
+          >
+            <h4 className="flex items-center gap-2 font-semibold mb-3">
+              <History size={18} /> Last SOS Requests
+            </h4>
             <ul className="space-y-2 text-sm">
               {history.map((h, i) => (
-                <li key={i} className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300">
+                <li
+                  key={i}
+                  className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300"
+                >
                   <span>
-                    {new Date(h.timestamp).toLocaleString()} - {h.status} - {h.type?.toUpperCase()}
+                    {new Date(h.timestamp).toLocaleString()} - {h.status} -{" "}
+                    {h.type?.toUpperCase()}
                   </span>
                   <div className="flex items-center gap-2">
-                    <a href={`https://maps.google.com/?q=${h.lat},${h.lng}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">View Map</a>
-                    <button onClick={() => clearHistoryItem(i)} className="text-xs text-red-500">Remove</button>
+                    <a
+                      href={`https://maps.google.com/?q=${h.lat},${h.lng}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      View Map
+                    </a>
+                    <button
+                      onClick={() => clearHistoryItem(i)}
+                      className="text-xs text-red-500"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </li>
               ))}
@@ -464,8 +707,13 @@ export default function Emergency() {
           </motion.div>
         )}
 
-        {/* Additional Emergency Options */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7, duration: 0.6 }} className="mt-10 grid gap-6 sm:grid-cols-2">
+        {/* ===== Additional Options ===== */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.6 }}
+          className="mt-10 grid gap-6 sm:grid-cols-2"
+        >
           {[
             {
               icon: PhoneCall,
@@ -485,7 +733,12 @@ export default function Emergency() {
               title: "Share Location",
               desc: "Share your current map link with a contact.",
               color: "text-purple-500",
-              action: () => navigator.share && navigator.share({ title: "My Location", text: `I'm here: ${window.location.href}` }),
+              action: () =>
+                navigator.share &&
+                navigator.share({
+                  title: "My Location",
+                  text: `I'm here: ${window.location.href}`,
+                }),
             },
             {
               icon: AlertTriangle,
@@ -494,12 +747,21 @@ export default function Emergency() {
               color: "text-orange-500",
             },
           ].map((card, i) => (
-            <motion.div key={i} whileHover={{ scale: 1.05 }} onClick={card.action} className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2">
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.05 }}
+              onClick={card.action}
+              className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2"
+            >
               <div className="flex items-center gap-3">
                 <card.icon className={`${card.color}`} size={24} />
-                <h4 className="font-semibold text-gray-800 dark:text-gray-200">{card.title}</h4>
+                <h4 className="font-semibold text-gray-800 dark:text-gray-200">
+                  {card.title}
+                </h4>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{card.desc}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {card.desc}
+              </p>
             </motion.div>
           ))}
         </motion.div>
