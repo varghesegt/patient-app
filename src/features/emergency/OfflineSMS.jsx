@@ -9,12 +9,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   PhoneCall,
-  Copy,
   Share2,
   ChevronDown,
 } from "lucide-react";
 
-// ✅ Replace this with your emergency numbers
 const DEFAULT_RECIPIENT = "+911234567890";
 
 const TEMPLATES = {
@@ -86,10 +84,7 @@ export default function OfflineSMS() {
           lon: pos.coords.longitude.toFixed(5),
         });
       },
-      (err) => {
-        console.warn("Location denied:", err);
-        setLocation(null);
-      },
+      () => setLocation(null),
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
@@ -98,18 +93,17 @@ export default function OfflineSMS() {
     fetchLocation();
   }, []);
 
-  // ✅ Build advanced message with maps link
+  // ✅ Build advanced message with maps link always included
   const buildMessageText = (customText) => {
     const template = TEMPLATES[selected];
     const base = customText?.trim().length ? customText.trim() : template.body;
     const time = new Date().toLocaleString();
     const locText = location
       ? `\n📍 Location: ${location.lat}, ${location.lon}\n🌐 Maps: https://maps.google.com/?q=${location.lat},${location.lon}`
-      : "";
+      : "\n📍 Location not available";
     return `${template.title}\n\n${base}\n\n🕒 ${time}${locText}\n\n(Sent via Emergency App)`;
   };
 
-  // 🔄 Local history
   const pushHistory = (entry) => {
     const next = [entry, ...history].slice(0, 10);
     setHistory(next);
@@ -138,18 +132,7 @@ export default function OfflineSMS() {
       pushHistory({ ...msg, sentVia: "SMS App", time: Date.now() });
       if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
     } catch {
-      fallbackCopy(msg);
-    }
-  };
-
-  const fallbackCopy = async (msg) => {
-    try {
-      await navigator.clipboard.writeText(msg.text);
-      setStatus("error");
-      pushHistory({ ...msg, sentVia: "Clipboard", time: Date.now() });
-      alert("Message copied. Paste it in your SMS app.");
-    } catch {
-      alert("Could not copy automatically. Please copy manually.");
+      alert("Could not open SMS app. Please copy manually.");
     }
   };
 
@@ -174,11 +157,9 @@ export default function OfflineSMS() {
             setStatus("success");
             setMessage("");
             return;
-          } catch {
-            fallbackCopy(msg);
-          }
+          } catch {}
         } else {
-          fallbackCopy(msg);
+          openNativeSmsApp(msg);
         }
         return;
       }
@@ -195,23 +176,10 @@ export default function OfflineSMS() {
       setMessage("");
     } catch {
       lastUnsent.current = msg;
-      fallbackCopy(msg);
+      openNativeSmsApp(msg);
     }
   };
 
-  // 📋 Copy message
-  const copyMessage = async () => {
-    const txt = buildMessageText(message);
-    try {
-      await navigator.clipboard.writeText(txt);
-      if (navigator.vibrate) navigator.vibrate(40);
-      alert("Copied to clipboard");
-    } catch {
-      alert("Copy failed. Please copy manually.");
-    }
-  };
-
-  // 📤 Share message
   const shareMessage = async () => {
     const txt = buildMessageText(message);
     if (!navigator.share) {
@@ -237,28 +205,30 @@ export default function OfflineSMS() {
     <motion.div
       initial={{ y: 12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="p-4 sm:p-6 bg-white/90 dark:bg-gray-900/90 border rounded-2xl shadow-lg max-w-lg w-full mx-auto"
+      className="p-6 bg-white border rounded-2xl shadow-xl max-w-lg w-full mx-auto"
     >
       {/* Header */}
-      <header className="flex items-center justify-between flex-wrap gap-2">
-        <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+      <header className="flex items-center justify-between">
+        <h3 className="font-bold text-gray-800 flex items-center gap-2 text-lg">
           {isOnline ? <Wifi className="text-green-500" /> : <WifiOff className="text-red-500" />}
           Emergency Quick-Send
         </h3>
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+        <span className="text-xs font-medium text-gray-500">
           {isOnline ? "Online" : "Offline"}
-        </div>
+        </span>
       </header>
 
       {/* Template Selector */}
-      <div className="mt-4 relative">
+      <div className="mt-5 relative">
         <button
           onClick={() => setDropdownOpen((s) => !s)}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-800"
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
         >
           <div className="text-left">
-            <div className="text-sm font-semibold">{TEMPLATES[selected].title}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{TEMPLATES[selected].body}</div>
+            <div className="text-sm font-semibold text-gray-800">
+              {TEMPLATES[selected].title}
+            </div>
+            <div className="text-xs text-gray-500">{TEMPLATES[selected].body}</div>
           </div>
           <ChevronDown size={18} />
         </button>
@@ -269,16 +239,16 @@ export default function OfflineSMS() {
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className="absolute z-20 left-0 right-0 mt-2 bg-white dark:bg-gray-800 border rounded-lg shadow-lg p-2 max-h-60 overflow-y-auto"
+              className="absolute z-20 left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg p-2 max-h-60 overflow-y-auto"
             >
               {Object.keys(TEMPLATES).map((k) => (
                 <li key={k}>
                   <button
                     onClick={() => selectTemplate(k)}
-                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100"
                   >
                     <div className="text-sm font-medium">{TEMPLATES[k].title}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{TEMPLATES[k].body}</div>
+                    <div className="text-xs text-gray-500">{TEMPLATES[k].body}</div>
                   </button>
                 </li>
               ))}
@@ -292,47 +262,40 @@ export default function OfflineSMS() {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder={TEMPLATES[selected].body}
-        className="w-full mt-3 p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm min-h-[100px]"
+        className="w-full mt-3 p-3 rounded-lg border bg-gray-50 text-sm min-h-[110px] focus:ring-2 focus:ring-sky-400 outline-none"
       />
 
       {/* Location + Actions */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           onClick={fetchLocation}
-          className="flex items-center gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs"
+          className="flex items-center gap-1 px-4 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg text-xs font-medium hover:bg-sky-100 transition"
         >
-          <MapPin size={16} />{" "}
+          <MapPin size={16} />
           {location ? `${location.lat}, ${location.lon}` : "Get Location"}
         </button>
 
         <input
           value={recipient}
           onChange={(e) => setRecipient(e.target.value)}
-          className="flex-1 px-3 py-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 text-xs"
+          className="flex-1 px-3 py-2 rounded-lg border bg-white text-xs"
           placeholder="Recipient (e.g. +911234567890)"
         />
 
         <button
-          onClick={copyMessage}
-          className="px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
-        >
-          <Copy size={16} />
-        </button>
-
-        <button
           onClick={shareMessage}
-          className="px-2 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg"
+          className="px-3 py-2 bg-sky-50 text-sky-700 border border-sky-200 rounded-lg hover:bg-sky-100 transition"
         >
           <Share2 size={16} />
         </button>
       </div>
 
       {/* Send Buttons */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         <button
           onClick={() => send({ via: "auto" })}
           disabled={status === "sending"}
-          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white font-semibold ${
+          className={`flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-white font-semibold shadow ${
             isOnline ? "bg-sky-600 hover:bg-sky-700" : "bg-yellow-600 hover:bg-yellow-700"
           }`}
         >
@@ -342,9 +305,9 @@ export default function OfflineSMS() {
 
         <button
           onClick={() => send({ via: "sms-app" })}
-          className="px-3 py-2 rounded-lg border bg-white dark:bg-gray-700"
+          className="px-4 py-3 rounded-lg border bg-white hover:bg-gray-50 transition"
         >
-          <PhoneCall size={16} />
+          <PhoneCall size={18} />
         </button>
       </div>
 
@@ -374,30 +337,20 @@ export default function OfflineSMS() {
 
       {/* History */}
       {history.length > 0 && (
-        <div className="mt-5">
-          <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Recent activity
-          </h4>
+        <div className="mt-6">
+          <h4 className="text-xs font-semibold text-gray-700 mb-2">Recent activity</h4>
           <ul className="space-y-2 text-xs">
             {history.map((h) => (
               <li
                 key={h.id || h.time}
-                className="p-2 rounded bg-gray-50 dark:bg-gray-800 flex items-start justify-between"
+                className="p-3 rounded-lg bg-gray-50 border flex items-start justify-between"
               >
                 <div className="flex-1">
-                  <div className="text-[11px] text-gray-800 dark:text-gray-200 line-clamp-3">
-                    {h.text}
-                  </div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-[12px] text-gray-700 line-clamp-3">{h.text}</div>
+                  <div className="text-[10px] text-gray-500 mt-1">
                     {fmtTime(h.time)} • {h.sentVia}
                   </div>
                 </div>
-                <button
-                  onClick={() => navigator.clipboard?.writeText(h.text)}
-                  className="ml-2 px-2 py-1 rounded bg-white dark:bg-gray-700"
-                >
-                  Copy
-                </button>
               </li>
             ))}
           </ul>
