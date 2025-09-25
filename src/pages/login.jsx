@@ -90,10 +90,10 @@ export default function Login() {
   const redirectByRole = (role) => {
     switch (role) {
       case "doctor":
-        return "/doctor-dashboard";
+        return "/doctordashboard";
       case "admin":
       case "hospital":
-        return "/hospital-dashboard";
+        return "/hospitaldashboard";
       default:
         return "/dashboard"; // patient or guest
     }

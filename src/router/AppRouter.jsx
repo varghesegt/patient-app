@@ -72,9 +72,9 @@ const LoginRedirect = () => {
 
   // 🔥 Role-based redirection
   const roleRedirects = {
-    doctor: "/doctor-dashboard",
-    admin: "/hospital-dashboard",
-    hospital: "/hospital-dashboard",
+    doctor: "/doctordashboard",
+    admin: "/hospitaldashboard",
+    hospital: "/hospitaldashboard",
     patient: "/dashboard",
     guest: "/dashboard",
   };

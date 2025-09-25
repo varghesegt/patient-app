@@ -330,7 +330,7 @@ export default function DoctorDashboard() {
           <div className="flex items-center gap-3">
             <Stethoscope className="w-8 h-8 text-indigo-600" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Doctor Dashboard — Advanced</h1>
+              <h1 className="text-2xl font-bold text-gray-800">Doctor Dashboard</h1>
               <p className="text-sm text-gray-500">Interactive, persistent, and keyboard friendly</p>
             </div>
           </div>
