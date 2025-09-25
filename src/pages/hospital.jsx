@@ -127,7 +127,7 @@ const getDistanceKm = (loc1, loc2) => {
 /* ================================
    ✅ Overpass Query
 ================================ */
-const buildOverpassQuery = (lat, lng, radius = 8000) => `
+const buildOverpassQuery = (lat, lng, radius = 20000) => `
   [out:json];
   (
     node["amenity"~"hospital|clinic|pharmacy|doctors|dentist|blood_bank|laboratory"](around:${radius},${lat},${lng});
@@ -183,7 +183,7 @@ export default function Hospital() {
     try {
       const res = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
-        body: buildOverpassQuery(userLocation.lat, userLocation.lng, 8000),
+        body: buildOverpassQuery(userLocation.lat, userLocation.lng, 20000),
       });
 
       if (!res.ok) throw new Error("Overpass API failed");
