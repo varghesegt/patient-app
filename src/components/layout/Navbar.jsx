@@ -90,13 +90,13 @@ const translations = {
 export default function Navbar() {
   const { pathname } = useLocation();
   const { isAuthenticated, logout, user } = useAuth();
-  const { lang } = useContext(LanguageContext); // ✅ use global language
+  const { lang } = useContext(LanguageContext);
   const [isOpen, setIsOpen] = useState(false);
 
   // ------------ Translator Function ------------
   const t = (key) => {
     const parts = key.split(".");
-    let cur = translations[lang] || translations.en; // ✅ fallback to English
+    let cur = translations[lang] || translations.en;
     for (const p of parts) {
       if (!cur || typeof cur !== "object" || !(p in cur)) return key;
       cur = cur[p];
@@ -113,7 +113,7 @@ export default function Navbar() {
   ];
 
   const navItemsDoctor = [
-    { label: t("nav.dashboard"), path: "/doctor/dashboard", icon: <Stethoscope size={18} /> },
+    { label: t("nav.dashboard"), path: "/doctordashboard", icon: <Stethoscope size={18} /> },
     { label: t("nav.appointments"), path: "/doctor/appointments", icon: <CalendarDays size={18} /> },
     { label: t("nav.patients"), path: "/doctor/patients", icon: <User size={18} /> },
     { label: t("nav.analytics"), path: "/doctor/analytics", icon: <BarChart3 size={18} /> },
@@ -121,7 +121,7 @@ export default function Navbar() {
   ];
 
   const navItemsAdmin = [
-    { label: t("nav.dashboard"), path: "/admin/dashboard", icon: <Hospital size={18} /> },
+    { label: t("nav.dashboard"), path: "/hospitaldashboard", icon: <Hospital size={18} /> },
     { label: t("nav.manageDoctors"), path: "/admin/doctors", icon: <Stethoscope size={18} /> },
     { label: t("nav.managePatients"), path: "/admin/patients", icon: <User size={18} /> },
     { label: t("nav.settings"), path: "/admin/settings", icon: <Settings size={18} /> },
@@ -147,19 +147,16 @@ export default function Navbar() {
   const handleLogout = () => logout && logout();
 
   return (
-    <nav className="bg-gradient-to-r from-sky-700 via-sky-800 to-sky-900 text-white shadow-lg sticky top-0 z-50 backdrop-blur-md border-b border-sky-600">
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 py-3">
+    <nav className="bg-gradient-to-r from-sky-700/90 via-sky-800/90 to-sky-900/90 backdrop-blur-xl sticky top-0 z-50 shadow-lg border-b border-sky-600">
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 lg:px-8 py-3">
         {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 font-bold tracking-wide hover:text-yellow-300 transition-colors duration-300"
-        >
+        <Link to="/" className="flex items-center gap-2 group">
           <img
             src="/logo.png"
             alt="MediLink360 Logo"
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg shadow-md"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg shadow-md transition-transform group-hover:scale-110"
           />
-          <span className="text-lg sm:text-xl md:text-2xl font-semibold whitespace-nowrap flex items-center">
+          <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-wide text-white">
             MediLink360
           </span>
         </Link>
@@ -170,22 +167,30 @@ export default function Navbar() {
             const active = path && pathname === path;
             const clickHandler = onClick === logout ? handleLogout : onClick;
             return (
-              <li key={label} className="relative group">
+              <li key={label} className="relative">
                 {clickHandler ? (
                   <button
                     onClick={() => clickHandler()}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-yellow-200 hover:text-sky-900 transition duration-300"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:text-yellow-300 transition-colors"
                   >
                     {icon} <span className="font-medium">{label}</span>
                   </button>
                 ) : (
                   <Link
                     to={path}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition duration-300 ${
-                      active ? "bg-yellow-300 text-sky-900 font-semibold" : "hover:bg-yellow-200 hover:text-sky-900"
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                      active
+                        ? "text-yellow-300 font-semibold"
+                        : "text-white hover:text-yellow-300"
                     }`}
                   >
                     {icon} <span className="font-medium">{label}</span>
+                    {active && (
+                      <motion.div
+                        layoutId="underline"
+                        className="absolute -bottom-1 left-0 w-full h-[2px] bg-yellow-300 rounded"
+                      />
+                    )}
                   </Link>
                 )}
               </li>
@@ -197,6 +202,7 @@ export default function Navbar() {
         <button
           className="md:hidden flex items-center p-2 rounded-lg hover:bg-sky-600 transition"
           onClick={() => setIsOpen((s) => !s)}
+          aria-label="Toggle menu"
         >
           {isOpen ? <X size={26} /> : <Menu size={26} />}
         </button>
@@ -210,9 +216,9 @@ export default function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden bg-sky-800/95 px-6 rounded-b-2xl shadow-lg"
+            className="md:hidden bg-sky-900/95 backdrop-blur-xl shadow-lg border-t border-sky-700"
           >
-            <ul className="flex flex-col gap-2 py-4">
+            <ul className="flex flex-col gap-2 py-4 px-6">
               {navItems.map(({ label, path, onClick, icon }) => {
                 const active = path && pathname === path;
                 const clickHandler = onClick === logout ? handleLogout : onClick;
@@ -233,7 +239,9 @@ export default function Navbar() {
                         to={path}
                         onClick={() => setIsOpen(false)}
                         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition duration-300 ${
-                          active ? "bg-yellow-300 text-sky-900 font-semibold" : "hover:bg-yellow-200 hover:text-sky-900"
+                          active
+                            ? "bg-yellow-300 text-sky-900 font-semibold"
+                            : "text-white hover:bg-yellow-200 hover:text-sky-900"
                         }`}
                       >
                         {icon} <span className="font-medium">{label}</span>

@@ -112,8 +112,8 @@ const patientRoutes = [
   { path: "/consultdoctorone", element: <ConsultDoctorOne /> },
 ];
 
-const doctorRoutes = [{ path: "/doctor-dashboard", element: <DoctorDashboard /> }];
-const hospitalRoutes = [{ path: "/hospital-dashboard", element: <HospitalDashboard /> }];
+const doctorRoutes = [{ path: "/doctordashboard", element: <DoctorDashboard /> }];
+const hospitalRoutes = [{ path: "/hospitaldashboard", element: <HospitalDashboard /> }];
 
 /* ================== App Router ================== */
 export default function AppRouter() {
