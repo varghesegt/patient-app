@@ -1,8 +1,9 @@
+// src/router/AppRouter.jsx
 import React, { lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-// Public Pages
+/* ================== Pages (Lazy Loaded) ================== */
 const Home = lazy(() => import("../pages/home.jsx"));
 const Login = lazy(() => import("../pages/login.jsx"));
 const Register = lazy(() => import("../pages/register.jsx"));
@@ -11,21 +12,23 @@ const Hospital = lazy(() => import("../pages/hospital.jsx"));
 const Symptoms = lazy(() => import("../pages/symptoms.jsx"));
 const FirstAid = lazy(() => import("../pages/firstaid.jsx"));
 const ConsultDoctor = lazy(() => import("../pages/consultdoctor.jsx"));
-const About = lazy(() => import("../pages/about.jsx")); // ✅ About page
-const Contact = lazy(() => import("../pages/contact.jsx")); // ✅ Contact page
+const About = lazy(() => import("../pages/about.jsx"));
+const Contact = lazy(() => import("../pages/contact.jsx"));
 
-// Private Pages
+const DoctorDashboard = lazy(() => import("../pages/doctordashboard.jsx"));
+const HospitalDashboard = lazy(() => import("../pages/hospitaldashboard.jsx"));
 const Dashboard = lazy(() => import("../pages/index.jsx"));
 const Profile = lazy(() => import("../pages/profile.jsx"));
+
 const EmergencyOne = lazy(() => import("../pages/emergencyone.jsx"));
 const HospitalOne = lazy(() => import("../pages/hospitalone.jsx"));
 const SymptomsOne = lazy(() => import("../pages/symptomsone.jsx"));
 const FirstAidOne = lazy(() => import("../pages/firstaidone.jsx"));
 const ConsultDoctorOne = lazy(() => import("../pages/consultdoctorone.jsx"));
 
-// Guarded Route
-const PrivateRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+/* ================== Private Route ================== */
+const PrivateRoute = ({ children, roles }) => {
+  const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -36,95 +39,119 @@ const PrivateRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated ? (
-    children
-  ) : (
-    <Navigate to="/login" state={{ from: location }} replace />
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (roles && !roles.includes(user?.role)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-red-600">
+        <h2 className="text-2xl font-bold">Access Denied</h2>
+        <p className="mt-2">You do not have permission to view this page.</p>
+      </div>
+    );
+  }
+
+  return children;
+};
+
+/* ================== Role Based Redirect ================== */
+const LoginRedirect = () => {
+  const { isAuthenticated, user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-sky-600 font-semibold animate-pulse">
+        Checking authentication...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Login />;
+
+  // 🔥 Role-based redirection
+  const roleRedirects = {
+    doctor: "/doctor-dashboard",
+    admin: "/hospital-dashboard",
+    hospital: "/hospital-dashboard",
+    patient: "/dashboard",
+    guest: "/dashboard",
+  };
+
+  return (
+    <Navigate
+      to={roleRedirects[user?.role] || "/dashboard"}
+      state={{ from: location }}
+      replace
+    />
   );
 };
 
-export default function AppRouter() {
-  const { isAuthenticated } = useAuth();
+/* ================== Route Configs ================== */
+const publicRoutes = [
+  { path: "/", element: <Home /> },
+  { path: "/login", element: <LoginRedirect /> },
+  { path: "/register", element: <Register /> },
+  { path: "/emergency", element: <Emergency /> },
+  { path: "/hospital", element: <Hospital /> },
+  { path: "/symptoms", element: <Symptoms /> },
+  { path: "/firstaid", element: <FirstAid /> },
+  { path: "/consultdoctor", element: <ConsultDoctor /> },
+  { path: "/about", element: <About /> },
+  { path: "/contact", element: <Contact /> },
+];
 
+const patientRoutes = [
+  { path: "/dashboard", element: <Dashboard /> },
+  { path: "/profile", element: <Profile /> },
+  { path: "/emergencyone", element: <EmergencyOne /> },
+  { path: "/hospitalone", element: <HospitalOne /> },
+  { path: "/symptomsone", element: <SymptomsOne /> },
+  { path: "/firstaidone", element: <FirstAidOne /> },
+  { path: "/consultdoctorone", element: <ConsultDoctorOne /> },
+];
+
+const doctorRoutes = [{ path: "/doctor-dashboard", element: <DoctorDashboard /> }];
+const hospitalRoutes = [{ path: "/hospital-dashboard", element: <HospitalDashboard /> }];
+
+/* ================== App Router ================== */
+export default function AppRouter() {
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Home />} />
-      <Route
-        path="/login"
-        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
-      />
-      <Route
-        path="/register"
-        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />}
-      />
-      <Route path="/emergency" element={<Emergency />} />
-      <Route path="/hospital" element={<Hospital />} />
-      <Route path="/symptoms" element={<Symptoms />} />
-      <Route path="/firstaid" element={<FirstAid />} />
-      <Route path="/consultdoctor" element={<ConsultDoctor />} />
-      <Route path="/about" element={<About />} /> {/* ✅ About */}
-      <Route path="/contact" element={<Contact />} /> {/* ✅ Contact */}
+      {/* ---------- Public Routes ---------- */}
+      {publicRoutes.map((route) => (
+        <Route key={route.path} path={route.path} element={route.element} />
+      ))}
 
-      {/* Private Routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <PrivateRoute>
-            <Profile />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/emergencyone"
-        element={
-          <PrivateRoute>
-            <EmergencyOne />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/hospitalone"
-        element={
-          <PrivateRoute>
-            <HospitalOne />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/symptomsone"
-        element={
-          <PrivateRoute>
-            <SymptomsOne />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/firstaidone"
-        element={
-          <PrivateRoute>
-            <FirstAidOne />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/consultdoctorone"
-        element={
-          <PrivateRoute>
-            <ConsultDoctorOne />
-          </PrivateRoute>
-        }
-      />
+      {/* ---------- Patient Routes ---------- */}
+      {patientRoutes.map((route) => (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={<PrivateRoute roles={["patient", "guest"]}>{route.element}</PrivateRoute>}
+        />
+      ))}
 
-      {/* 404 */}
+      {/* ---------- Doctor Routes ---------- */}
+      {doctorRoutes.map((route) => (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={<PrivateRoute roles={["doctor"]}>{route.element}</PrivateRoute>}
+        />
+      ))}
+
+      {/* ---------- Hospital/Admin Routes ---------- */}
+      {hospitalRoutes.map((route) => (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={<PrivateRoute roles={["admin", "hospital"]}>{route.element}</PrivateRoute>}
+        />
+      ))}
+
+      {/* ---------- 404 ---------- */}
       <Route
         path="*"
         element={

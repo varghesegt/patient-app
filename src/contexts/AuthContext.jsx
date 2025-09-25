@@ -1,89 +1,121 @@
+// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
+// ==========================
+// Create Auth Context
+// ==========================
 const AuthContext = createContext();
 
+// ==========================
 // Custom Hook
+// ==========================
 export const useAuth = () => useContext(AuthContext);
 
+// ==========================
+// Auth Provider
+// ==========================
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
-  /* =========================
-     Restore User on App Load
-  ========================= */
+  // =========================
+  // Restore user from localStorage
+  // ==========================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (err) {
-        console.error("❌ Error parsing stored user:", err);
+        console.error("❌ Failed to parse stored user:", err);
         localStorage.removeItem("user");
       }
     }
     setLoading(false);
   }, []);
 
-  /* =========================
-     Generic Save + Redirect
-  ========================= */
-  const saveUser = (newUser, redirectTo = "/dashboard") => {
-    setUser(newUser);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    navigate(redirectTo, { replace: true });
+  // =========================
+  // Role-based Redirect Helper
+  // =========================
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case "doctor":
+        return "/doctor-dashboard";
+      case "admin":
+      case "hospital":
+        return "/hospital-dashboard";
+      default:
+        return "/dashboard"; // patient or guest
+    }
   };
 
-  /* =========================
-     LOGIN (Email/Password or Social)
-  ========================= */
-  const login = async ({ email, password, role, name, provider, redirectTo }) => {
+  // =========================
+  // Save user + redirect
+  // =========================
+  const saveUser = (newUser, redirectTo) => {
+    setUser(newUser);
+    localStorage.setItem("user", JSON.stringify(newUser));
+
+    const path = redirectTo || getRedirectPath(newUser.role);
+    navigate(path, { replace: true });
+  };
+
+  // =========================
+  // LOGIN
+  // =========================
+  const login = async ({
+    email,
+    password,
+    role = "patient",
+    name,
+    provider,
+    redirectTo,
+  }) => {
     let loggedUser;
 
-    // 🔹 Social or Google login (dummy)
     if (provider) {
+      // Social login (Google, etc.)
       loggedUser = {
         email: email || `${provider}@demo.com`,
         name: name || `${provider} User`,
-        role: role || "patient",
+        role,
         provider,
       };
-    }
-    // 🔹 Normal email/password login (dummy)
-    else if (email && password) {
+    } else if (email && password) {
+      // Standard email/password login
       loggedUser = {
         email,
         name: email.split("@")[0],
-        role: role || "patient",
+        role,
         provider: "credentials",
       };
-    }
-    else {
-      alert("⚠️ Invalid credentials!");
-      return;
+    } else {
+      throw new Error("Invalid credentials");
     }
 
     saveUser(loggedUser, redirectTo);
+    return loggedUser;
   };
 
-  /* =========================
-     REGISTER (Dummy)
-  ========================= */
-  const register = async ({ email, password, role, redirectTo }) => {
+  // =========================
+  // REGISTER (dummy)
+  // =========================
+  const register = async ({ email, password, role = "patient", redirectTo }) => {
     const newUser = {
       email,
       name: email.split("@")[0],
-      role: role || "patient",
+      role,
       provider: "credentials",
     };
     saveUser(newUser, redirectTo);
+    return newUser;
   };
 
-  /* =========================
-     GUEST LOGIN (Dummy)
-  ========================= */
+  // =========================
+  // Guest login
+  // =========================
   const guestLogin = () => {
     const guestUser = {
       email: "guest@demo.com",
@@ -92,11 +124,12 @@ export const AuthProvider = ({ children }) => {
       provider: "guest",
     };
     saveUser(guestUser);
+    return guestUser;
   };
 
-  /* =========================
-     LOGOUT
-  ========================= */
+  // =========================
+  // LOGOUT
+  // =========================
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -104,6 +137,9 @@ export const AuthProvider = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
+  // =========================
+  // Context Provider
+  // =========================
   return (
     <AuthContext.Provider
       value={{

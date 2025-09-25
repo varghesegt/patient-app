@@ -2,11 +2,20 @@
 import React, { useState, useContext } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Loader2, LogIn, Shield } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  LogIn,
+  Shield,
+  ChevronDown,
+} from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 
-// === Multilingual Texts ===
+/* ==========================
+   Multilingual Texts
+========================== */
 const LANGS = {
   en: {
     welcome: "Welcome Back",
@@ -66,57 +75,92 @@ export default function Login() {
   const { lang } = useContext(LanguageContext);
   const t = LANGS[lang] || LANGS.en;
 
-  const location = useLocation();
   const navigate = useNavigate();
-  const redirectTo = location.state?.from?.pathname || "/dashboard";
+  const location = useLocation();
 
   const [form, setForm] = useState({ email: "", password: "", role: "patient" });
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  /* ==========================
+     Role-based Redirect
+  ========================== */
+  const redirectByRole = (role) => {
+    switch (role) {
+      case "doctor":
+        return "/doctor-dashboard";
+      case "admin":
+      case "hospital":
+        return "/hospital-dashboard";
+      default:
+        return "/dashboard"; // patient or guest
+    }
+  };
+
+  /* ==========================
+     Form Login Handler
+  ========================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await login({ ...form, redirectTo });
-    setLoading(false);
+    try {
+      const user = await login(form);
+      const redirectTo = location.state?.from?.pathname || redirectByRole(user.role);
+      navigate(redirectTo, { replace: true });
+    } catch (err) {
+      console.error("Login Error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /* ==========================
+     Google Login Handler
+     (respects selected role)
+  ========================== */
   const handleGoogle = async () => {
     setGoogleLoading(true);
-    setTimeout(async () => {
-      await login({
+    try {
+      const user = await login({
         email: "demo.google.user@gmail.com",
         name: "Demo Google User",
-        role: "patient",
+        role: form.role, // 👈 respect selected role
         provider: "google",
-        redirectTo,
       });
-      setGoogleLoading(false);
+      const redirectTo = location.state?.from?.pathname || redirectByRole(user.role);
       navigate(redirectTo, { replace: true });
-    }, 1500);
+    } catch (err) {
+      console.error("Google Login Error:", err);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
+  /* ==========================
+     UI Component
+  ========================== */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-sky-100 px-4">
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="w-full max-w-md bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-8 relative"
       >
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <motion.div
-            initial={{ rotate: -20, opacity: 0 }}
-            animate={{ rotate: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
           >
-            <Shield className="mx-auto text-sky-600 mb-3" size={48} />
+            <Shield className="mx-auto text-sky-600 mb-3 drop-shadow-lg" size={56} />
           </motion.div>
-          <h2 className="text-3xl font-extrabold text-sky-700">{t.welcome}</h2>
+          <h2 className="text-3xl font-extrabold text-sky-700 tracking-tight">
+            {t.welcome}
+          </h2>
           <p className="text-gray-500 text-sm mt-1">{t.loginTo}</p>
         </div>
 
@@ -125,16 +169,22 @@ export default function Login() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t.selectRole}
           </label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400"
-          >
-            <option value="patient">{t.patient}</option>
-            <option value="doctor">{t.doctor}</option>
-            <option value="hospital">{t.admin}</option>
-          </select>
+          <div className="relative">
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              className="w-full px-3 py-2 appearance-none border rounded-lg focus:ring-2 focus:ring-sky-400 cursor-pointer"
+            >
+              <option value="patient">{t.patient}</option>
+              <option value="doctor">{t.doctor}</option>
+              <option value="admin">{t.admin}</option>
+            </select>
+            <ChevronDown
+              size={18}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            />
+          </div>
         </div>
 
         {/* Login Form */}
@@ -167,7 +217,7 @@ export default function Login() {
             />
           </div>
 
-          {/* Forgot + Register */}
+          {/* Links */}
           <div className="flex justify-between text-sm">
             <Link to="/forgot-password" className="text-sky-600 hover:underline">
               {t.forgot}
@@ -182,10 +232,11 @@ export default function Login() {
           </div>
 
           {/* Submit */}
-          <button
+          <motion.button
             type="submit"
+            whileTap={{ scale: 0.97 }}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 text-white rounded-lg hover:scale-105 shadow-lg transition"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-sky-600 to-sky-700 text-white rounded-lg hover:shadow-xl transition"
           >
             {loading ? (
               <>
@@ -196,7 +247,7 @@ export default function Login() {
                 <LogIn size={18} /> {t.login}
               </>
             )}
-          </button>
+          </motion.button>
         </form>
 
         {/* Divider */}
@@ -207,10 +258,11 @@ export default function Login() {
         </div>
 
         {/* Google Login */}
-        <button
+        <motion.button
           onClick={handleGoogle}
+          whileTap={{ scale: 0.97 }}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-2 py-2.5 border rounded-lg hover:bg-gray-50 transition"
+          className="w-full flex items-center justify-center gap-2 py-2.5 border rounded-lg bg-white hover:bg-gray-50 transition shadow-sm"
         >
           {googleLoading ? (
             <>
@@ -227,7 +279,7 @@ export default function Login() {
               {t.google}
             </>
           )}
-        </button>
+        </motion.button>
       </motion.div>
     </div>
   );
