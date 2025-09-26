@@ -2,27 +2,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ==========================
-// Create Auth Context
-// ==========================
 const AuthContext = createContext();
-
-// ==========================
-// Custom Hook
-// ==========================
 export const useAuth = () => useContext(AuthContext);
-
-// ==========================
-// Auth Provider
-// ==========================
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // =========================
   // Restore user from localStorage
-  // ==========================
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -36,9 +23,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // =========================
   // Role-based Redirect Helper
-  // =========================
   const getRedirectPath = (role) => {
     switch (role) {
       case "doctor":
@@ -47,13 +32,11 @@ export const AuthProvider = ({ children }) => {
       case "hospital":
         return "/hospital-dashboard";
       default:
-        return "/dashboard"; // patient or guest
+        return "/dashboard";
     }
   };
 
-  // =========================
   // Save user + redirect
-  // =========================
   const saveUser = (newUser, redirectTo) => {
     setUser(newUser);
     localStorage.setItem("user", JSON.stringify(newUser));
@@ -62,9 +45,7 @@ export const AuthProvider = ({ children }) => {
     navigate(path, { replace: true });
   };
 
-  // =========================
   // LOGIN
-  // =========================
   const login = async ({
     email,
     password,
@@ -76,7 +57,6 @@ export const AuthProvider = ({ children }) => {
     let loggedUser;
 
     if (provider) {
-      // Social login (Google, etc.)
       loggedUser = {
         email: email || `${provider}@demo.com`,
         name: name || `${provider} User`,
@@ -84,11 +64,11 @@ export const AuthProvider = ({ children }) => {
         provider,
       };
     } else if (email && password) {
-      // Standard email/password login
       loggedUser = {
         email,
         name: email.split("@")[0],
-        role,
+        
+    role,
         provider: "credentials",
       };
     } else {
@@ -99,9 +79,7 @@ export const AuthProvider = ({ children }) => {
     return loggedUser;
   };
 
-  // =========================
-  // REGISTER (dummy)
-  // =========================
+  // REGISTER 
   const register = async ({ email, password, role = "patient", redirectTo }) => {
     const newUser = {
       email,
@@ -113,9 +91,7 @@ export const AuthProvider = ({ children }) => {
     return newUser;
   };
 
-  // =========================
   // Guest login
-  // =========================
   const guestLogin = () => {
     const guestUser = {
       email: "guest@demo.com",
@@ -127,9 +103,7 @@ export const AuthProvider = ({ children }) => {
     return guestUser;
   };
 
-  // =========================
   // LOGOUT
-  // =========================
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -137,9 +111,7 @@ export const AuthProvider = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
-  // =========================
   // Context Provider
-  // =========================
   return (
     <AuthContext.Provider
       value={{

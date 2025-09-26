@@ -19,9 +19,8 @@ import {
   Edit2,
 } from "lucide-react";
 
-/* ================= CONFIG ================= */
-const DEFAULT_RECIPIENT = "+911234567890";
-const MAX_SMS_PART = 150; // conservative; real MMS/SMS segmentation varies by carrier
+const DEFAULT_RECIPIENT = "+919092357100";
+const MAX_SMS_PART = 150; 
 
 const TEMPLATES = {
   accident: {
@@ -46,8 +45,6 @@ const TEMPLATES = {
   },
 };
 
-/* ================= SIMPLE IDB WRAPPER ================= */
-// Small promise-based IndexedDB helper. If IDB unavailable, falls back to localStorage.
 const IDB_DB = "offlineSMS_db";
 const IDB_STORE = "messages";
 
@@ -62,7 +59,7 @@ function openIdb() {
       }
     };
     r.onsuccess = () => res(r.result);
-    r.onerror = () => res(null); // fallback
+    r.onerror = () => res(null);
   });
 }
 
@@ -109,7 +106,6 @@ async function idbDelete(id) {
   });
 }
 
-/* ================= HELPERS ================= */
 const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isiOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
 
@@ -129,20 +125,16 @@ function splitSms(text) {
 }
 
 function buildSmsUri(number, body) {
-  // Android: sms:number?body=...  iOS: sms:number&body=...
   const encoded = encodeURIComponent(body);
   if (isiOS) return `sms:${number}&body=${encoded}`;
   return `sms:${number}?body=${encoded}`;
 }
 
-/* ================= SERVICE WORKER / BACKGROUND SYNC HELPERS ================= */
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return null;
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
-    // try to register sync tag if supported
     if ('sync' in reg) {
-      // later: reg.sync.register('send-sms');
     }
     return reg;
   } catch (e) {
@@ -150,7 +142,6 @@ async function registerServiceWorker() {
   }
 }
 
-/* ================= MAIN COMPONENT ================= */
 export default function OfflineSMS() {
   const [online, setOnline] = useState(navigator.onLine);
   const [selected, setSelected] = useState('accident');
@@ -175,7 +166,6 @@ export default function OfflineSMS() {
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
 
-    // load IDB history + pending
     (async () => {
       const all = await idbGetAll();
       const hist = (all || []).filter(x => x.sentVia).sort((a,b) => b.time - a.time).slice(0, 50);
@@ -183,14 +173,10 @@ export default function OfflineSMS() {
       setHistory(hist);
       setPending(pend);
     })();
-
-    // register sw
     (async () => {
       const reg = await registerServiceWorker();
       setSwRegistered(!!reg);
     })();
-
-    // start watchPosition to keep location fresh (permission required)
     startWatchingLocation();
 
     return () => {
@@ -202,11 +188,10 @@ export default function OfflineSMS() {
   }, []);
 
   useEffect(() => {
-    // when connection returns, try to flush pending queue
     if (online && pending.length) flushPending();
   }, [online]);
 
-  /* ===== Location ===== */
+  /*Location*/
   function startWatchingLocation() {
     if (!('geolocation' in navigator)) return;
     try {
@@ -220,7 +205,6 @@ export default function OfflineSMS() {
           if (online) reverseGeocode(loc.lat, loc.lon).then(addr => setAddress(addr)).catch(() => {});
         },
         (err) => {
-          // fallback to last known
           const cache = localStorage.getItem('lastLocation');
           if (cache) setLocation(JSON.parse(cache));
           setLocLoading(false);
@@ -240,7 +224,6 @@ export default function OfflineSMS() {
   }
 
   async function reverseGeocode(lat, lon) {
-    // uses OpenStreetMap Nominatim - for demo only. Respect usage policy.
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
       if (!res.ok) return null;
@@ -249,7 +232,6 @@ export default function OfflineSMS() {
     } catch { return null; }
   }
 
-  /* ===== Message builder ===== */
   const buildMessageText = (customText) => {
     const template = TEMPLATES[selected];
     const base = customText?.trim().length ? customText.trim() : template.body;
@@ -261,9 +243,8 @@ export default function OfflineSMS() {
     return `${template.title}\n\n${base}\n\n🕒 ${time}${locPart}${addrPart}\n\n(Sent via Emergency App)`;
   };
 
-  /* ===== Persistence ===== */
+  /*Persistence*/
   const pushHistory = async (entry) => {
-    // save to IDB (preferred) and update local state
     await idbPut(entry);
     setHistory((prev) => [entry, ...prev].slice(0, 50));
   };
@@ -272,8 +253,6 @@ export default function OfflineSMS() {
     const next = [msg, ...pending].slice(0, 100);
     setPending(next);
     localStorage.setItem('pendingSMS', JSON.stringify(next));
-
-    // try background sync registration if service worker + sync available
     if (navigator.serviceWorker && 'SyncManager' in window) {
       navigator.serviceWorker.ready.then(reg => reg.sync.register('offline-sms-sync').catch(()=>{}));
     }
@@ -285,12 +264,10 @@ export default function OfflineSMS() {
     localStorage.setItem('pendingSMS', JSON.stringify(next));
   };
 
-  /* ===== Sending ===== */
+  /*Sending*/
   const sendViaApi = async (msg) => {
-    // Replace with real API endpoint in production
     if (!online) throw new Error('offline');
     setStatus('sending');
-    // simulate API latency
     await new Promise(r => setTimeout(r, 900));
     if (!mounted.current) return;
     setStatus('success');
@@ -313,7 +290,6 @@ export default function OfflineSMS() {
       }
     }
 
-    // for multi-part SMS we open SMS app with full body (most apps handle long texts)
     const uri = buildSmsUri(msg.recipient, msg.text);
     try {
       window.location.href = uri;
@@ -327,14 +303,12 @@ export default function OfflineSMS() {
     const txt = buildMessageText(message);
     const msg = { id: Date.now() + Math.floor(Math.random()*1000), text: txt, recipient };
 
-    // prefer API when online
     if (online && opts.via !== 'sms-app') {
       try {
         await sendViaApi(msg);
         setMessage('');
         return;
       } catch (err) {
-        // if API fails, queue and fallback to SMS app on mobile
         queuePending(msg);
         if (isMobile) openNativeSmsApp(msg);
         setMessage('');
@@ -342,31 +316,25 @@ export default function OfflineSMS() {
       }
     }
 
-    // if offline or user forced SMS app
     const didOpen = await openNativeSmsApp(msg);
     if (!didOpen) {
-      // as a last resort, queue pending and show confirmation to user to copy
       queuePending(msg);
       alert('Could not open SMS app. Message has been queued locally and will be sent when connection is restored.');
     }
     setMessage('');
   };
 
-  /* Retry / flush pending */
   const flushPending = async () => {
     const saved = JSON.parse(localStorage.getItem('pendingSMS') || '[]');
-    // attempt send each via API; if succeeds remove from pending
     for (const m of saved) {
       try {
         await sendViaApi(m);
         await removePendingById(m.id);
       } catch (e) {
-        // keep it
       }
     }
   };
 
-  /* Share API */
   const shareMessage = async () => {
     const txt = buildMessageText(message);
     if (!navigator.share) { alert('Share API not supported'); return; }
@@ -377,12 +345,10 @@ export default function OfflineSMS() {
     } catch {}
   };
 
-  /* Edit pending (quick) */
   const editPending = (id) => {
     const p = pending.find(x => x.id === id);
     if (!p) return;
     setMessage(p.text);
-    // remove from pending on edit
     removePendingById(id);
   };
 
@@ -399,7 +365,6 @@ export default function OfflineSMS() {
 
   const fmtTime = (ts) => new Date(ts).toLocaleString();
 
-  /* ================= UI ================= */
   return (
     <motion.div initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-6 bg-white border rounded-2xl shadow-xl max-w-2xl w-full mx-auto">
       {/* Header */}
