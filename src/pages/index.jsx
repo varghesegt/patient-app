@@ -1,4 +1,3 @@
-// src/pages/index.jsx
 import React, { useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import { Globe, Activity, AlertTriangle, MapPin, User, HeartPulse, Stethoscope } from "lucide-react";
@@ -55,7 +54,7 @@ export default function Home() {
   const t = LANGS[lang] || LANGS.en;
 
   useEffect(() => {
-    window.scrollTo(0, 0); // Scroll to top on mount
+    window.scrollTo(0, 0); 
   }, []);
 
   return (

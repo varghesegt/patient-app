@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Stethoscope, Info } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
-// Translations
 const LANGS = {
   en: {
     title: "Symptom Checker",
@@ -113,7 +112,7 @@ export default function Symptoms() {
         </p>
       </motion.div>
 
-      <div className="h-10 sm:h-16" /> {/* Bottom spacing for mobile */}
+      <div className="h-10 sm:h-16" />
     </div>
   );
 }

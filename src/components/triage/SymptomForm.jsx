@@ -7,10 +7,10 @@ import useTriage from "../../features/symptom-checker/useTriage";
 import { LanguageContext } from "../../context/LanguageContext";
 import { SYMPTOMS_TRANSLATIONS } from "./symptoms.data";
 
-/* 🌍 Translations */
+/*Translations */
 const STRINGS = {
   en: {
-    title: "🧑‍⚕️ AI Symptom Triage",
+    title: "AI Symptom Triage",
     subtitle:
       "Select or speak your symptoms. AI will calculate possible conditions and risk.",
     speak: "Speak Symptoms",
@@ -25,7 +25,7 @@ const STRINGS = {
     pleaseSelect: "Please select at least one symptom.",
   },
   hi: {
-    title: "🧑‍⚕️ एआई लक्षण जांच",
+    title: " एआई लक्षण जांच",
     subtitle: "लक्षण चुनें या बोलें। एआई संभावित बीमारियाँ और जोखिम बताएगा।",
     speak: "लक्षण बोलें",
     stop: "सुनना बंद करें",
@@ -40,7 +40,7 @@ const STRINGS = {
     pleaseSelect: "कृपया कम से कम एक लक्षण चुनें।",
   },
   ta: {
-    title: "🧑‍⚕️ செயற்கை நுண்ணறிவு அறிகுறி மதிப்பீடு",
+    title: "செயற்கை நுண்ணறிவு அறிகுறி மதிப்பீடு",
     subtitle:
       "அறிகுறிகளைத் தேர்ந்தெடுக்கவும் அல்லது பேசவும். செயற்கை நுண்ணறிவு சாத்தியமான நோய்கள் மற்றும் அபாயத்தை கணக்கிடும்.",
     speak: "அறிகுறிகளை பேசவும்",
@@ -57,7 +57,7 @@ const STRINGS = {
   },
 };
 
-/* 🌟 Category translations */
+/*Category translations */
 const CATEGORY_LABELS = {
   en: {
     General: "General",
@@ -91,7 +91,7 @@ const CATEGORY_LABELS = {
   },
 };
 
-/* === Utility: Fuzzy Matching === */
+/*Utility: Fuzzy Matching*/
 const similarity = (a, b) => {
   if (!a || !b) return 0;
   const matrix = Array.from({ length: b.length + 1 }, (_, i) =>
@@ -142,7 +142,7 @@ const highlightTranscript = (text, matched, unmatched) => {
   });
 };
 
-/* === Main Component === */
+/*Main Component*/
 export default function SymptomForm() {
   const { lang } = useContext(LanguageContext);
   const t = STRINGS[lang] || STRINGS.en;
@@ -259,13 +259,13 @@ export default function SymptomForm() {
       transition={{ duration: 0.4 }}
     >
       <form onSubmit={handleSubmit}>
-        {/* === Header === */}
+        {/*Header*/}
         <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-sky-600 to-cyan-500 text-transparent bg-clip-text">
           {t.title}
         </h2>
         <p className="text-gray-600 text-sm mb-4">{t.subtitle}</p>
 
-        {/* === Voice Input === */}
+        {/*Voice Input*/}
         <div className="mb-4 flex items-center gap-3">
           <Button type="button" onClick={handleVoiceInput} variant="primary">
             {status === "listening" ? <Square size={16} /> : <Mic size={16} />}
@@ -297,7 +297,7 @@ export default function SymptomForm() {
           </AnimatePresence>
         </div>
 
-        {/* === Transcript === */}
+        {/*Transcript*/}
         {transcript && (
           <motion.div
             className="mb-3 text-sm p-2 bg-sky-50 rounded-md"
@@ -311,7 +311,7 @@ export default function SymptomForm() {
           </motion.div>
         )}
 
-        {/* === Search Box === */}
+        {/*Search Box*/}
         <div className="relative mb-4">
           <input
             type="text"
@@ -323,7 +323,7 @@ export default function SymptomForm() {
           <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
         </div>
 
-        {/* === Selected Symptoms === */}
+        {/*Selected Symptoms*/}
         <AnimatePresence>
           {selectedSymptoms.length > 0 && (
             <motion.div
@@ -353,7 +353,7 @@ export default function SymptomForm() {
           )}
         </AnimatePresence>
 
-        {/* === Symptom Categories === */}
+        {/*Symptom Categories*/}
         <div className="space-y-4 max-h-72 overflow-y-auto pr-2 custom-scroll">
           {Object.entries(SYMPTOMS).map(([category, items]) => {
             const filtered = items.filter((sym) =>
@@ -368,7 +368,7 @@ export default function SymptomForm() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                {/* ✅ Translated Category */}
+                {/*Translated Category*/}
                 <h3 className="font-semibold text-sky-700 mb-2">
                   {CATEGORY_LABELS[lang]?.[category] || category}
                 </h3>
@@ -397,7 +397,7 @@ export default function SymptomForm() {
           })}
         </div>
 
-        {/* === Actions === */}
+        {/*Actions*/}
         <div className="mt-4 flex gap-3">
           <Button type="submit" disabled={selectedSymptoms.length === 0}>
             {t.check}
@@ -408,7 +408,7 @@ export default function SymptomForm() {
         </div>
       </form>
 
-      {/* === Results === */}
+      {/*Results*/}
       <AnimatePresence>
         {result && (
           <motion.div

@@ -28,18 +28,15 @@ import {
   Cell,
 } from "recharts";
 
-// -----------------------------
-// Dummy data (can be replaced by props / API calls)
-// -----------------------------
 const INITIAL_PATIENTS = [
-  { id: 1, name: "John Doe", age: 29, admitted: "2025-09-20", dept: "General" },
+  { id: 1, name: "Abi", age: 29, admitted: "2025-09-20", dept: "General" },
   { id: 2, name: "Jane Smith", age: 34, admitted: "2025-09-21", dept: "Cardiology" },
   { id: 3, name: "Mark Wilson", age: 41, admitted: "2025-09-22", dept: "Neurology" },
   { id: 4, name: "Alice Johnson", age: 37, admitted: "2025-09-23", dept: "Orthopedics" },
 ];
 
 const INITIAL_APPOINTMENTS = [
-  { id: 1, doctor: "Dr. Sharma", patient: "John Doe", time: "10:00 AM", dept: "General" },
+  { id: 1, doctor: "Dr. Sharma", patient: "Abi", time: "10:00 AM", dept: "General" },
   { id: 2, doctor: "Dr. Verma", patient: "Jane Smith", time: "11:30 AM", dept: "Cardiology" },
   { id: 3, doctor: "Dr. Rao", patient: "Mark Wilson", time: "01:00 PM", dept: "Neurology" },
 ];
@@ -47,7 +44,7 @@ const INITIAL_APPOINTMENTS = [
 const INITIAL_NOTIFICATIONS = [
   { id: 1, text: "New patient admitted: Alice Johnson", type: "success" },
   { id: 2, text: "Critical case in Cardiology!", type: "alert" },
-  { id: 3, text: "Appointment rescheduled: John Doe", type: "info" },
+  { id: 3, text: "Appointment rescheduled: Abi", type: "info" },
 ];
 
 const INITIAL_AMBULANCES = [
@@ -65,9 +62,6 @@ const PIE_DATA = [
 
 const COLORS = ["#0ea5e9", "#22c55e", "#f97316", "#a855f7"];
 
-// -----------------------------
-// Main component
-// -----------------------------
 export default function HospitalDashboard() {
   const { lang } = useContext(LanguageContext) || { lang: "en" };
   const [loading, setLoading] = useState(true);
@@ -76,9 +70,8 @@ export default function HospitalDashboard() {
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [ambulances, setAmbulances] = useState(INITIAL_AMBULANCES);
   const [search, setSearch] = useState("");
-  const [timeRange, setTimeRange] = useState("week"); // day | week | month
+  const [timeRange, setTimeRange] = useState("week");
 
-  // Chart data memoization (avoid regeneration on every render)
   const dailyData = useMemo(() => [
     { date: "08:00", patients: 5 },
     { date: "12:00", patients: 10 },
@@ -96,7 +89,6 @@ export default function HospitalDashboard() {
     { date: "Sun", patients: 17 },
   ], []);
 
-  // Generate stable monthly data once on mount
   const monthlyData = useMemo(() => {
     const arr = Array.from({ length: 30 }, (_, i) => ({
       date: `Day ${i + 1}`,
@@ -112,13 +104,11 @@ export default function HospitalDashboard() {
     return weeklyData;
   }, [timeRange, dailyData, weeklyData, monthlyData]);
 
-  // Loading simulation
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 700);
     return () => clearTimeout(t);
   }, []);
 
-  // Live notification simulator (cleans up on unmount)
   useEffect(() => {
     const interval = setInterval(() => {
       const next = INITIAL_NOTIFICATIONS[Math.floor(Math.random() * INITIAL_NOTIFICATIONS.length)];
@@ -127,7 +117,6 @@ export default function HospitalDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Derived / filtered lists
   const filteredPatients = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return patients;
@@ -140,12 +129,10 @@ export default function HospitalDashboard() {
     return appointments.filter(a => a.patient.toLowerCase().includes(q) || a.doctor.toLowerCase().includes(q));
   }, [search, appointments]);
 
-  // Ambulance stats
   const totalAmbulances = ambulances.length;
   const activeTrips = ambulances.filter(a => a.status === "on trip").length;
   const idleAmbulances = ambulances.filter(a => a.status === "idle").length;
 
-  // Assign ambulance safely (updates ambulances + notifications)
   const assignAmbulance = (patientName) => {
     setAmbulances(prev => {
       const available = prev.find(a => a.status === "idle");
@@ -331,10 +318,6 @@ export default function HospitalDashboard() {
   );
 }
 
-// -----------------------------
-// Subcomponents
-// -----------------------------
-
 function KpiCard({ icon, value, label, trend, trendType = 'up', subText }) {
   return (
     <motion.div whileHover={{ scale: 1.03 }} className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-start gap-3">
@@ -395,7 +378,6 @@ function DataTable({ title, data = [], columns = [] }) {
 }
 
 function AppointmentList({ title, data = [], ambulances = [], setAmbulances = () => {}, assignAmbulance = () => {} }) {
-  // local tracking map for immediate UI response
   const [localAssigned, setLocalAssigned] = useState(() => {
     const map = {};
     ambulances.forEach(a => { if (a.assignedTo) map[a.assignedTo] = a.id; });
@@ -403,7 +385,6 @@ function AppointmentList({ title, data = [], ambulances = [], setAmbulances = ()
   });
 
   useEffect(() => {
-    // keep localAssigned in sync when ambulances props change
     const map = {};
     ambulances.forEach(a => { if (a.assignedTo) map[a.assignedTo] = a.id; });
     setLocalAssigned(map);
@@ -412,18 +393,12 @@ function AppointmentList({ title, data = [], ambulances = [], setAmbulances = ()
   const handleAssign = (patientName) => {
     const available = ambulances.find(a => a.status === 'idle');
     if (!available) {
-      // graceful UI fallback
       alert(`No ambulances available for ${patientName}`);
       return;
     }
 
-    // optimistic UI update
     setLocalAssigned(prev => ({ ...prev, [patientName]: available.id }));
-
-    // call parent updater which will also emit a notification
     assignAmbulance(patientName);
-
-    // also update ambulances locally if parent didn't (best-effort)
     setAmbulances(prev => prev.map(a => a.id === available.id ? { ...a, status: 'on trip', assignedTo: patientName } : a));
   };
 

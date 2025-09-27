@@ -1,4 +1,3 @@
-// src/pages/Hospital.jsx
 import React, { useEffect, useState, useContext, useRef, useCallback } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 import { motion } from "framer-motion";
@@ -12,10 +11,6 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-/* ================================
-   ✅ Fix default Leaflet icons
-   (so fallback marker works in Vite)
-================================ */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).href,
@@ -23,9 +18,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
 });
 
-/* ================================
-   ✅ External Custom Marker Icons
-================================ */
 const ICONS_URLS = {
   hospital: "https://cdn-icons-png.flaticon.com/512/2966/2966327.png",
   clinic: "https://cdn-icons-png.flaticon.com/512/4320/4320337.png",
@@ -38,23 +30,17 @@ const ICONS_URLS = {
   default: "https://cdn-icons-png.flaticon.com/512/3177/3177361.png",
 };
 
-/* ================================
-   ✅ Build Leaflet Icon
-================================ */
 const buildIcon = (url, size = 38) =>
   new L.Icon({
     iconUrl: url,
-    iconSize: [size, size],          // size of icon
-    iconAnchor: [size / 2, size],    // point of icon which corresponds to marker location
-    popupAnchor: [0, -size / 1.5],   // popup above icon
+    iconSize: [size, size],        
+    iconAnchor: [size / 2, size],    
+    popupAnchor: [0, -size / 1.5],   
     shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
     shadowSize: [40, 40],
     shadowAnchor: [12, 40],
   });
 
-/* ================================
-   ✅ Prebuilt Icons
-================================ */
 const icons = {
   hospital: buildIcon(ICONS_URLS.hospital, 42),
   clinic: buildIcon(ICONS_URLS.clinic, 36),
@@ -67,9 +53,6 @@ const icons = {
   default: buildIcon(ICONS_URLS.default, 32),
 };
 
-/* ================================
-   ✅ Icon Resolver
-================================ */
 const getIcon = (type = "") => {
   const key = type.toLowerCase();
   if (icons[key]) return icons[key];
@@ -84,9 +67,6 @@ const getIcon = (type = "") => {
   return icons.default;
 };
 
-/* ================================
-   ✅ Recenter Helper
-================================ */
 function RecenterMap({ lat, lng }) {
   const map = useMap();
   useEffect(() => {
@@ -96,10 +76,7 @@ function RecenterMap({ lat, lng }) {
   }, [lat, lng, map]);
   return null;
 }
-
-/* ================================
-   ✅ Debounce Hook
-================================ */
+ 
 function useDebounce(value, delay = 400) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -109,9 +86,6 @@ function useDebounce(value, delay = 400) {
   return debounced;
 }
 
-/* ================================
-   ✅ Distance Calculator
-================================ */
 const getDistanceKm = (loc1, loc2) => {
   const R = 6371;
   const dLat = ((loc2.lat - loc1.lat) * Math.PI) / 180;
@@ -124,10 +98,7 @@ const getDistanceKm = (loc1, loc2) => {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-/* ================================
-   ✅ Overpass Query
-================================ */
-const buildOverpassQuery = (lat, lng, radius = 8000) => `
+const buildOverpassQuery = (lat, lng, radius = 20000) => `
   [out:json];
   (
     node["amenity"~"hospital|clinic|pharmacy|doctors|dentist|blood_bank|laboratory"](around:${radius},${lat},${lng});
@@ -143,9 +114,6 @@ const buildOverpassQuery = (lat, lng, radius = 8000) => `
   out center;
 `;
 
-/* ================================
-   ✅ Main Component
-================================ */
 export default function Hospital() {
   const { t } = useContext(LanguageContext);
   const [userLocation, setUserLocation] = useState(null);
@@ -159,7 +127,7 @@ export default function Hospital() {
   const mapRef = useRef(null);
   const debouncedSearch = useDebounce(search, 400);
 
-  /* ✅ Get User Location */
+  /*Get User Location*/
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -175,7 +143,7 @@ export default function Hospital() {
     }
   }, []);
 
-  /* ✅ Fetch Places from Overpass API */
+  /*Fetch Places from Overpass API*/
   const fetchHospitals = useCallback(async () => {
     if (!userLocation) return;
     setLoading(true);
@@ -183,7 +151,7 @@ export default function Hospital() {
     try {
       const res = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
-        body: buildOverpassQuery(userLocation.lat, userLocation.lng, 8000),
+        body: buildOverpassQuery(userLocation.lat, userLocation.lng, 20000),
       });
 
       if (!res.ok) throw new Error("Overpass API failed");
@@ -221,7 +189,7 @@ export default function Hospital() {
     fetchHospitals();
   }, [fetchHospitals]);
 
-  /* ✅ Filter & Sort */
+  /*Filter & Sort*/
   useEffect(() => {
     let result = places.filter(
       (p) =>
@@ -233,7 +201,7 @@ export default function Hospital() {
     setFilteredPlaces(result);
   }, [debouncedSearch, maxDistance, category, places]);
 
-  /* ✅ Loading Screen */
+  /*Loading Screen*/
   if (!userLocation || loading) {
     return (
       <div className="flex flex-col gap-3 items-center justify-center h-screen text-blue-600">
@@ -243,14 +211,14 @@ export default function Hospital() {
     );
   }
 
-  /* ✅ UI */
+  /*UI*/
   return (
     <div className="max-w-7xl mx-auto p-6 text-gray-800">
       <h1 className="text-3xl font-bold text-blue-700 mb-4">
         {t?.nav?.hospital || "Nearby Hospitals & Clinics"}
       </h1>
 
-      {/* 🔍 Search & Filters */}
+      {/*Search & Filters*/}
       <div className="bg-white shadow-lg rounded-lg p-4 mb-6 flex flex-col gap-4">
         <input
           type="text"
@@ -300,7 +268,7 @@ export default function Hospital() {
         </div>
       </div>
 
-      {/* 🗺 Map */}
+      {/*Map*/}
       <div className="relative rounded-lg overflow-hidden shadow-xl">
         <MapContainer
           center={userLocation}
@@ -329,7 +297,7 @@ export default function Hospital() {
         </MapContainer>
       </div>
 
-      {/* 📋 Cards */}
+      {/*Cards*/}
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredPlaces.map((p, idx) => (
           <motion.div

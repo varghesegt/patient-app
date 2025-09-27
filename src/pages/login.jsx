@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import React, { useState, useContext } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,9 +12,6 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 
-/* ==========================
-   Multilingual Texts
-========================== */
 const LANGS = {
   en: {
     welcome: "Welcome Back",
@@ -84,9 +80,6 @@ export default function Login() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  /* ==========================
-     Role-based Redirect
-  ========================== */
   const redirectByRole = (role) => {
     switch (role) {
       case "doctor":
@@ -95,13 +88,10 @@ export default function Login() {
       case "hospital":
         return "/hospitaldashboard";
       default:
-        return "/dashboard"; // patient or guest
+        return "/dashboard";
     }
   };
 
-  /* ==========================
-     Form Login Handler
-  ========================== */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -116,17 +106,13 @@ export default function Login() {
     }
   };
 
-  /* ==========================
-     Google Login Handler
-     (respects selected role)
-  ========================== */
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
       const user = await login({
         email: "demo.google.user@gmail.com",
         name: "Demo Google User",
-        role: form.role, // 👈 respect selected role
+        role: form.role, 
         provider: "google",
       });
       const redirectTo = location.state?.from?.pathname || redirectByRole(user.role);
@@ -138,9 +124,6 @@ export default function Login() {
     }
   };
 
-  /* ==========================
-     UI Component
-  ========================== */
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-sky-100 px-4">
       <motion.div

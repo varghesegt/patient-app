@@ -1,9 +1,7 @@
-// src/router/AppRouter.jsx
 import React, { lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-/* ================== Pages (Lazy Loaded) ================== */
 const Home = lazy(() => import("../pages/home.jsx"));
 const Login = lazy(() => import("../pages/login.jsx"));
 const Register = lazy(() => import("../pages/register.jsx"));
@@ -26,7 +24,6 @@ const SymptomsOne = lazy(() => import("../pages/symptomsone.jsx"));
 const FirstAidOne = lazy(() => import("../pages/firstaidone.jsx"));
 const ConsultDoctorOne = lazy(() => import("../pages/consultdoctorone.jsx"));
 
-/* ================== Private Route ================== */
 const PrivateRoute = ({ children, roles }) => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
@@ -55,7 +52,6 @@ const PrivateRoute = ({ children, roles }) => {
   return children;
 };
 
-/* ================== Role Based Redirect ================== */
 const LoginRedirect = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
@@ -70,7 +66,6 @@ const LoginRedirect = () => {
 
   if (!isAuthenticated) return <Login />;
 
-  // 🔥 Role-based redirection
   const roleRedirects = {
     doctor: "/doctordashboard",
     admin: "/hospitaldashboard",
@@ -88,7 +83,6 @@ const LoginRedirect = () => {
   );
 };
 
-/* ================== Route Configs ================== */
 const publicRoutes = [
   { path: "/", element: <Home /> },
   { path: "/login", element: <LoginRedirect /> },
@@ -115,16 +109,13 @@ const patientRoutes = [
 const doctorRoutes = [{ path: "/doctordashboard", element: <DoctorDashboard /> }];
 const hospitalRoutes = [{ path: "/hospitaldashboard", element: <HospitalDashboard /> }];
 
-/* ================== App Router ================== */
 export default function AppRouter() {
   return (
     <Routes>
-      {/* ---------- Public Routes ---------- */}
       {publicRoutes.map((route) => (
         <Route key={route.path} path={route.path} element={route.element} />
       ))}
 
-      {/* ---------- Patient Routes ---------- */}
       {patientRoutes.map((route) => (
         <Route
           key={route.path}
@@ -133,7 +124,6 @@ export default function AppRouter() {
         />
       ))}
 
-      {/* ---------- Doctor Routes ---------- */}
       {doctorRoutes.map((route) => (
         <Route
           key={route.path}
@@ -142,7 +132,6 @@ export default function AppRouter() {
         />
       ))}
 
-      {/* ---------- Hospital/Admin Routes ---------- */}
       {hospitalRoutes.map((route) => (
         <Route
           key={route.path}
@@ -151,7 +140,6 @@ export default function AppRouter() {
         />
       ))}
 
-      {/* ---------- 404 ---------- */}
       <Route
         path="*"
         element={

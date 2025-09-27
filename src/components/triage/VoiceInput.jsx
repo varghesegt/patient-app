@@ -13,8 +13,8 @@ export default function VoiceInput({ value, onChange, keywords = [] }) {
     const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
     const rec = new SpeechRecognition();
     rec.lang = 'en-IN';
-    rec.interimResults = true;  // Enable partial results
-    rec.continuous = true;      // Keep listening continuously
+    rec.interimResults = true; 
+    rec.continuous = true; 
 
     rec.onresult = (e) => {
       let interim = '';
@@ -28,7 +28,6 @@ export default function VoiceInput({ value, onChange, keywords = [] }) {
       }
       setPartialTranscript(interim);
 
-      // Detect keywords in real-time
       const detected = keywords.filter((kw) =>
         (value + ' ' + interim).toLowerCase().includes(kw.toLowerCase())
       );
@@ -37,11 +36,11 @@ export default function VoiceInput({ value, onChange, keywords = [] }) {
 
     rec.onerror = (e) => {
       console.error('Voice recognition error:', e.error);
-      if (listening) rec.start(); // Auto-restart on error
+      if (listening) rec.start(); 
     };
 
     rec.onend = () => {
-      if (listening) rec.start(); // Auto-restart if stopped unexpectedly
+      if (listening) rec.start();
     };
 
     recRef.current = rec;

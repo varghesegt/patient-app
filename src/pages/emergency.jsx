@@ -16,7 +16,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import OfflineSMS from "../features/emergency/OfflineSMS";
 
 export default function Emergency() {
-  // ===== State Management =====
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,14 +32,12 @@ export default function Emergency() {
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hiddenTypes, setHiddenTypes] = useState([]);
 
-  // 🔑 OTP States
   const [otpStep, setOtpStep] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState("");
   const [enteredOtp, setEnteredOtp] = useState("");
   const [selectedType, setSelectedType] = useState(null);
   const [useLiveLoc, setUseLiveLoc] = useState(true);
 
-  // Emergency types
   const emergencyTypesRef = useRef([
     { id: "accident", label: "Accident" },
     { id: "stroke", label: "Stroke" },
@@ -49,7 +46,6 @@ export default function Emergency() {
     { id: "other", label: "Other" },
   ]);
 
-  // ===== Effects =====
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -75,7 +71,6 @@ export default function Emergency() {
     localStorage.setItem("sosHistory", JSON.stringify(history));
   }, [history]);
 
-  // ===== Helpers =====
   const saveToHistory = (data) =>
     setHistory((prev) => [data, ...prev].slice(0, 10));
 
@@ -103,7 +98,6 @@ export default function Emergency() {
     return keywords.some((k) => name.toLowerCase().includes(k));
   };
 
-  // ===== Hospital Lookup =====
   const fetchNearbyHospitals = async (lat, lng, radius = 5000) => {
     try {
       setLoadingHospitals(true);
@@ -147,7 +141,6 @@ export default function Emergency() {
     }
   };
 
-  // ===== SOS Handling =====
   const flushQueue = async () => {
     if (!isOnline || sosQueue.length === 0) return;
     const remaining = [];
@@ -272,7 +265,6 @@ export default function Emergency() {
     );
   };
 
-  // ===== UI =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 sm:p-10 relative overflow-hidden">
       {/* Glowing Background */}
@@ -310,7 +302,6 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* SOS Button */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -360,7 +351,6 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* ===== Modal: Emergency Selection + OTP ===== */}
         <AnimatePresence>
           {modalOpen && (
             <motion.div
@@ -452,7 +442,7 @@ export default function Emergency() {
                         </div>
                       </div>
 
-                      {/* Hospitals */}
+                      {/*Hospitals*/}
                       <div>
                         <p className="font-medium mb-2">Nearby Hospitals (government first)</p>
                         <div className="h-56 overflow-auto border rounded p-2">
@@ -558,7 +548,6 @@ export default function Emergency() {
                     </div>
                   </>
                 ) : (
-                  // OTP Step
                   <div className="text-center">
                     <KeyRound size={40} className="mx-auto text-red-600 mb-3" />
                     <h4 className="text-lg font-bold mb-2">OTP Verification</h4>
@@ -599,7 +588,7 @@ export default function Emergency() {
           )}
         </AnimatePresence>
 
-        {/* ===== Offline Queue ===== */}
+        {/*Offline Queue*/}
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -664,7 +653,7 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* ===== History ===== */}
+        {/*History*/}
         {history.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -707,7 +696,7 @@ export default function Emergency() {
           </motion.div>
         )}
 
-        {/* ===== Additional Options ===== */}
+        {/*Additional Options*/}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

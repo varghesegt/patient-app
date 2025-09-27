@@ -1,9 +1,5 @@
-// src/features/symptom-checker/useTriage.js
 import { useState, useRef } from "react";
 
-/** ================================
- *  Master Symptom List
- *  ================================ */
 export const SYMPTOMS = {
   General: [
     "Fever", "Fatigue", "Weakness", "Loss of appetite", "Night sweats", "Chills",
@@ -84,9 +80,7 @@ export const SYMPTOMS = {
   ],
 };
 
-/** ================================
- *  Symptom Weights Dictionary
- *  ================================ */
+
 const symptomWeights = {
   // General
   Fever: 20, Fatigue: 10, Weakness: 15, "Loss of appetite": 10, "Night sweats": 15,

@@ -1,11 +1,7 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Stethoscope,
-  User,
-  Calendar,
-  Clock,
-  MessageSquare,
   Phone,
   Info,
   Brain,
@@ -14,178 +10,356 @@ import {
   Eye,
   Bone,
   Smile,
+  Star,
+  MapPin,
+  Languages,
+  Search,
+  Filter,
+  Video,
+  MessageSquare,
+  Award,
+  TestTube,
+  CheckCircle,
+  Clock,
+  Microscope,
+  SortAsc,
+  Wind, 
 } from "lucide-react";
 
 export default function ConsultDoctor() {
-  const [form, setForm] = useState({
-    name: "",
-    symptoms: "",
-    date: "",
-    time: "",
-  });
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert("Consultation request submitted! A doctor will contact you soon.");
-  };
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+  const [location, setLocation] = useState("All");
+  const [sortBy, setSortBy] = useState("rating");
 
   const specialties = [
-    { icon: <HeartPulse className="w-7 h-7 text-red-500" />, title: "Cardiology" },
-    { icon: <Brain className="w-7 h-7 text-purple-600" />, title: "Neurology" },
-    { icon: <Baby className="w-7 h-7 text-pink-500" />, title: "Pediatrics" },
-    { icon: <Eye className="w-7 h-7 text-sky-500" />, title: "Ophthalmology" },
-    { icon: <Bone className="w-7 h-7 text-amber-600" />, title: "Orthopedics" },
-    { icon: <Smile className="w-7 h-7 text-green-500" />, title: "Dentistry" },
+    { icon: <HeartPulse className="w-6 h-6 text-red-500" />, title: "Cardiology" },
+    { icon: <Brain className="w-6 h-6 text-purple-600" />, title: "Neurology" },
+    { icon: <Baby className="w-6 h-6 text-pink-500" />, title: "Pediatrics" },
+    { icon: <Eye className="w-6 h-6 text-sky-500" />, title: "Ophthalmology" },
+    { icon: <Bone className="w-6 h-6 text-amber-600" />, title: "Orthopedics" },
+    { icon: <Smile className="w-6 h-6 text-green-500" />, title: "Dentistry" },
+    { icon: <Stethoscope className="w-6 h-6 text-blue-600" />, title: "General Medicine" },
+    { icon: <TestTube className="w-6 h-6 text-pink-700" />, title: "Pathology" },
+    { icon: <Microscope className="w-6 h-6 text-indigo-600" />, title: "Oncology" },
+    { icon: <Wind className="w-6 h-6 text-cyan-600" />, title: "Pulmonology" }, // ✅ Works now
   ];
+
+const locations = [
+  "All",
+  "Delhi",
+  "Mumbai",
+  "Bangalore",
+  "Hyderabad",
+  "Pune",
+  "Chennai",
+  "Kolkata",
+  "Ahmedabad",
+  "Jaipur",
+];
+
+const doctors = [
+  {
+    name: "Dr. Anjali Mehta",
+    specialty: "Cardiology",
+    experience: "12+ Years",
+    rating: 4.8,
+    hospital: "Apollo Hospitals, Delhi",
+    languages: "English, Hindi",
+    phone: "+911234567890",
+    whatsapp: "https://wa.me/911234567890",
+    city: "Delhi",
+    image: "https://randomuser.me/api/portraits/women/44.jpg",
+    available: ["10:00 AM", "12:30 PM", "4:00 PM"],
+    verified: true,
+  },
+  {
+    name: "Dr. Rajesh Kumar",
+    specialty: "Neurology",
+    experience: "15+ Years",
+    rating: 4.9,
+    hospital: "Fortis Hospitals, Mumbai",
+    languages: "English, Hindi, Marathi",
+    phone: "+911122334455",
+    whatsapp: "https://wa.me/911122334455",
+    city: "Mumbai",
+    image: "https://randomuser.me/api/portraits/men/46.jpg",
+    available: ["9:30 AM", "1:00 PM", "5:30 PM"],
+    verified: true,
+  },
+  {
+    name: "Dr. Priya Sharma",
+    specialty: "Pediatrics",
+    experience: "10+ Years",
+    rating: 4.7,
+    hospital: "Rainbow Hospitals, Bangalore",
+    languages: "English, Kannada, Hindi",
+    phone: "+919876543210",
+    whatsapp: "https://wa.me/919876543210",
+    city: "Bangalore",
+    image: "https://randomuser.me/api/portraits/women/47.jpg",
+    available: ["11:00 AM", "3:00 PM"],
+    verified: false,
+  },
+  {
+    name: "Dr. Suresh Reddy",
+    specialty: "Orthopedics",
+    experience: "18+ Years",
+    rating: 4.6,
+    hospital: "Yashoda Hospitals, Hyderabad",
+    languages: "English, Telugu, Hindi",
+    phone: "+919944556677",
+    whatsapp: "https://wa.me/919944556677",
+    city: "Hyderabad",
+    image: "https://randomuser.me/api/portraits/men/52.jpg",
+    available: ["10:30 AM", "2:00 PM", "6:00 PM"],
+    verified: true,
+  },
+  {
+    name: "Dr. Kavita Nair",
+    specialty: "Ophthalmology",
+    experience: "14+ Years",
+    rating: 4.9,
+    hospital: "Narayana Nethralaya, Chennai",
+    languages: "English, Tamil, Hindi",
+    phone: "+919876512340",
+    whatsapp: "https://wa.me/919876512340",
+    city: "Chennai",
+    image: "https://randomuser.me/api/portraits/women/65.jpg",
+    available: ["9:00 AM", "1:30 PM", "5:00 PM"],
+    verified: true,
+  },
+  {
+    name: "Dr. Arjun Patel",
+    specialty: "Dentistry",
+    experience: "9+ Years",
+    rating: 4.5,
+    hospital: "Smile Dental Care, Ahmedabad",
+    languages: "English, Gujarati, Hindi",
+    phone: "+919855667788",
+    whatsapp: "https://wa.me/919855667788",
+    city: "Ahmedabad",
+    image: "https://randomuser.me/api/portraits/men/67.jpg",
+    available: ["10:00 AM", "12:00 PM", "4:30 PM"],
+    verified: false,
+  },
+  {
+    name: "Dr. Ritu Chatterjee",
+    specialty: "Oncology",
+    experience: "20+ Years",
+    rating: 4.9,
+    hospital: "Tata Medical Center, Kolkata",
+    languages: "English, Bengali, Hindi",
+    phone: "+919811223344",
+    whatsapp: "https://wa.me/919811223344",
+    city: "Kolkata",
+    image: "https://randomuser.me/api/portraits/women/72.jpg",
+    available: ["9:30 AM", "1:00 PM"],
+    verified: true,
+  },
+  {
+    name: "Dr. Manish Gupta",
+    specialty: "Pulmonology",
+    experience: "16+ Years",
+    rating: 4.7,
+    hospital: "Manipal Hospitals, Pune",
+    languages: "English, Hindi, Marathi",
+    phone: "+919922334455",
+    whatsapp: "https://wa.me/919922334455",
+    city: "Pune",
+    image: "https://randomuser.me/api/portraits/men/74.jpg",
+    available: ["11:00 AM", "2:30 PM", "6:30 PM"],
+    verified: true,
+  },
+];
+
+  let filteredDoctors = doctors.filter(
+    (doc) =>
+      (filter === "All" || doc.specialty === filter) &&
+      (location === "All" || doc.city === location) &&
+      doc.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (sortBy === "rating") {
+    filteredDoctors = filteredDoctors.sort((a, b) => b.rating - a.rating);
+  } else if (sortBy === "experience") {
+    filteredDoctors = filteredDoctors.sort(
+      (a, b) => parseInt(b.experience) - parseInt(a.experience)
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 text-gray-900 flex flex-col">
-      {/* Page Heading */}
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
+        transition={{ duration: 0.7 }}
         className="text-center px-6 pt-12 sm:pt-20"
       >
-        <div className="flex justify-center mb-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="absolute inset-0 blur-3xl bg-indigo-400/40 rounded-full animate-pulse" />
-            <Stethoscope className="w-20 h-20 sm:w-24 sm:h-24 relative text-indigo-600 drop-shadow-lg" />
-          </motion.div>
-        </div>
-
-        <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-extrabold tracking-tight leading-tight bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
+        <Stethoscope className="w-20 h-20 sm:w-24 sm:h-24 text-indigo-600 mx-auto drop-shadow-lg" />
+        <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-extrabold mt-6 bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
           Consult a Doctor
         </h2>
-
-        <p className="mt-5 text-gray-700 max-w-2xl mx-auto text-[clamp(0.95rem,2vw,1.15rem)] leading-relaxed">
-          Connect with{" "}
-          <span className="font-semibold text-indigo-600">certified doctors</span>{" "}
-          online for expert medical advice, anytime, anywhere.
+        <p className="mt-5 text-gray-700 max-w-2xl mx-auto text-lg">
+          Find <span className="font-semibold text-indigo-600">specialists</span>, 
+          compare experience, and book consultations across{" "}
+          <span className="text-sky-600 font-semibold">India</span>.
         </p>
       </motion.div>
 
-      {/* Consultation Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative w-full mt-12 sm:mt-16 lg:mt-20 rounded-3xl bg-white/80 backdrop-blur-xl shadow-2xl border border-indigo-100/70 p-6 sm:p-10 md:p-12 mx-auto max-w-4xl"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/40 via-transparent to-sky-50/20 pointer-events-none rounded-3xl" />
-
-        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-          {/* Name */}
-          <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
-            <User className="w-5 h-5 text-indigo-600" />
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Your Name"
-              className="w-full bg-transparent focus:outline-none text-gray-800 placeholder-gray-400"
-              required
-            />
-          </div>
-
-          {/* Symptoms */}
-          <div className="flex items-start gap-3 border-b border-gray-200 pb-3">
-            <MessageSquare className="w-5 h-5 text-indigo-600 mt-1" />
-            <textarea
-              name="symptoms"
-              value={form.symptoms}
-              onChange={handleChange}
-              placeholder="Describe your symptoms"
-              className="w-full bg-transparent focus:outline-none text-gray-800 placeholder-gray-400 resize-none"
-              rows={3}
-              required
-            />
-          </div>
-
-          {/* Date */}
-          <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
-            <Calendar className="w-5 h-5 text-indigo-600" />
-            <input
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className="w-full bg-transparent focus:outline-none text-gray-800"
-              required
-            />
-          </div>
-
-          {/* Time */}
-          <div className="flex items-center gap-3 border-b border-gray-200 pb-3">
-            <Clock className="w-5 h-5 text-indigo-600" />
-            <input
-              type="time"
-              name="time"
-              value={form.time}
-              onChange={handleChange}
-              className="w-full bg-transparent focus:outline-none text-gray-800"
-              required
-            />
-          </div>
-
-          {/* Submit */}
+      {/* Specialty Quick Filters */}
+      <div className="max-w-6xl mx-auto px-6 mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        {specialties.map((s, i) => (
           <motion.button
+            key={i}
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            type="submit"
-            className="w-full bg-gradient-to-r from-indigo-600 to-sky-500 text-white font-semibold py-3 rounded-xl shadow-lg"
+            onClick={() => setFilter(s.title)}
+            className={`flex flex-col items-center justify-center p-4 rounded-xl shadow-md ${
+              filter === s.title ? "bg-indigo-100 border border-indigo-400" : "bg-white"
+            }`}
           >
-            Submit Consultation Request
+            {s.icon}
+            <span className="text-sm mt-2 font-medium">{s.title}</span>
           </motion.button>
-        </form>
-      </motion.div>
+        ))}
+      </div>
 
-      {/* Specialties Section */}
-      <div className="mx-auto mt-16 w-full max-w-5xl px-4 sm:px-8">
-        <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
-          Available Specializations
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5">
-          {specialties.map((s, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-gray-100 py-5 hover:shadow-lg transition-all"
-            >
-              {s.icon}
-              <span className="text-sm font-medium text-gray-700">{s.title}</span>
-            </motion.div>
-          ))}
+      {/* Search & Filters */}
+      <div className="max-w-6xl mx-auto mt-12 px-4 flex flex-col lg:flex-row gap-4 justify-between items-center">
+        {/* Search */}
+        <div className="relative w-full lg:w-1/3">
+          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+          <input
+            type="text"
+            placeholder="Search doctor by name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+        </div>
+        {/* Location */}
+        <div className="relative w-full lg:w-1/4">
+          <MapPin className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+          <select
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            {locations.map((loc, i) => (
+              <option key={i} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Sort */}
+        <div className="relative w-full lg:w-1/4">
+          <SortAsc className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="rating">Sort by Rating</option>
+            <option value="experience">Sort by Experience</option>
+          </select>
         </div>
       </div>
 
-      {/* Emergency Call */}
+      {/* Doctors */}
+      <div className="mx-auto mt-16 w-full max-w-7xl px-4 sm:px-8">
+        {filteredDoctors.length === 0 ? (
+          <p className="text-center text-gray-500">No doctors found.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredDoctors.map((doc, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.03 }}
+                className="bg-white/90 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-lg p-6 flex flex-col gap-4 hover:shadow-2xl transition-all"
+              >
+                <img
+                  src={doc.image}
+                  alt={doc.name}
+                  className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-indigo-100"
+                />
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold text-indigo-700 flex items-center justify-center gap-2">
+                    {doc.name}
+                    {doc.verified && <CheckCircle className="w-5 h-5 text-green-500" />}
+                  </h4>
+                  <p className="text-sm text-gray-600">{doc.experience}</p>
+                </div>
+
+                <p className="text-sm text-gray-600 flex items-center gap-2">
+                  <Stethoscope className="w-4 h-4 text-sky-500" /> {doc.specialty}
+                </p>
+                <p className="text-sm text-gray-600 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-red-500" /> {doc.hospital} ({doc.city})
+                </p>
+                <p className="text-sm text-gray-600 flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-green-600" /> {doc.languages}
+                </p>
+
+                {/* Rating */}
+                <p className="text-sm flex items-center gap-1 text-yellow-500">
+                  {Array.from({ length: 5 }, (_, idx) => (
+                    <Star
+                      key={idx}
+                      className={`w-4 h-4 ${
+                        idx < Math.round(doc.rating) ? "fill-yellow-400" : "fill-gray-300"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-gray-700 ml-2">{doc.rating} / 5</span>
+                </p>
+
+                {/* Available Times */}
+                <div className="text-sm text-gray-700 mt-2">
+                  <Clock className="w-4 h-4 inline text-indigo-500 mr-1" />
+                  Available: {doc.available.join(", ")}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-3 mt-4">
+                  <button className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white py-2 rounded-lg font-medium shadow hover:scale-[1.02] transition">
+                    <Video className="w-4 h-4" /> Video Consult
+                  </button>
+                  <a
+                    href={doc.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-green-500 text-white py-2 rounded-lg font-medium shadow hover:scale-[1.02] transition"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Chat on WhatsApp
+                  </a>
+                  <a
+                    href={`tel:${doc.phone}`}
+                    className="flex items-center justify-center gap-2 w-full bg-red-500 text-white py-2 rounded-lg font-medium shadow hover:scale-[1.02] transition"
+                  >
+                    <Phone className="w-4 h-4" /> Call Now
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Emergency */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}
-        className="flex justify-center mt-14"
+        transition={{ duration: 0.7, delay: 0.3 }}
+        className="flex justify-center mt-16"
       >
         <a
-          href="tel:112"
+          href="tel:108"
           className="flex items-center gap-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:scale-105 transition-transform"
         >
           <Phone className="w-5 h-5" />
-          Emergency Call (112)
+          Call Ambulance (108)
         </a>
       </motion.div>
 
@@ -193,19 +367,19 @@ export default function ConsultDoctor() {
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-        className="mt-12 mx-4 sm:mx-10 lg:mx-20 flex items-start gap-4 bg-gradient-to-r from-amber-50/80 to-yellow-100/90 border border-yellow-200/70 rounded-2xl shadow-lg p-5 sm:p-6 md:p-7"
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+        className="mt-12 mx-4 sm:mx-10 lg:mx-20 flex items-start gap-4 bg-gradient-to-r from-amber-50 to-yellow-100 border border-yellow-200 rounded-2xl shadow-lg p-6"
       >
-        <Info className="w-7 h-7 sm:w-8 sm:h-8 text-yellow-600 shrink-0" />
-        <p className="text-[clamp(0.85rem,2vw,1rem)] text-gray-700 leading-relaxed">
+        <Info className="w-7 h-7 text-yellow-600 shrink-0" />
+        <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
           <span className="font-semibold">Disclaimer:</span> Online consultation
-          provides initial guidance and does not replace a physical examination.
-          For urgent cases, please visit a hospital immediately.
+          provides medical guidance only and cannot replace in-person diagnosis. 
+          For emergencies, call 108 or rush to the nearest hospital.
         </p>
       </motion.div>
 
-      <div className="h-10 sm:h-16" /> {/* Bottom spacing */}
+      <div className="h-10 sm:h-16" />
     </div>
   );
 }

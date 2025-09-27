@@ -38,7 +38,7 @@ export default function Emergency() {
   }, []);
 
   const saveToHistory = (data) => {
-    const newHistory = [data, ...history].slice(0, 5); // keep last 5
+    const newHistory = [data, ...history].slice(0, 5); 
     setHistory(newHistory);
     localStorage.setItem("sosHistory", JSON.stringify(newHistory));
   };
@@ -79,16 +79,14 @@ export default function Emergency() {
           body: JSON.stringify(sosData),
         });
       } else {
-        // Offline fallback → SMS link (for mobile devices)
         window.location.href = `sms:?body=🚨 EMERGENCY! Location: https://maps.google.com/?q=${latitude},${longitude}`;
       }
 
       saveToHistory(sosData);
 
-      // ✅ Give feedback
       setSending(false);
       setSent(true);
-      if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); // vibration pattern
+      if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]); 
       setTimeout(() => setSent(false), 5000);
     } catch (err) {
       console.error("SOS failed:", err);
@@ -169,7 +167,6 @@ export default function Emergency() {
               )}
             </motion.button>
 
-            {/* Status Message */}
             {sending && <p className="text-sm text-gray-600 dark:text-gray-400">Sending location…</p>}
             {sent && (
               <p className="text-sm text-green-600 dark:text-green-400 font-semibold">
@@ -184,7 +181,7 @@ export default function Emergency() {
           </div>
         </motion.div>
 
-        {/* 🔴 Location Mode Modal */}
+        {/*Location Mode Modal*/}
         <AnimatePresence>
           {modalOpen && (
             <motion.div

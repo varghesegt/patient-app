@@ -1,5 +1,3 @@
-// src/components/symptom-checker/symptoms.data.js
-
 export const CATEGORY_TRANSLATIONS = {
   en: {
     General: "General",

@@ -35,10 +35,6 @@ import {
   Legend,
 } from "recharts";
 
-// Single-file advanced Doctor Dashboard with: search + debounce, filters, sorting, pagination,
-// persistent localStorage, editable patient modal, add appointment modal, CSV export, task toggles,
-// inline charts, quick actions, keyboard shortcut ("/") to focus search.
-
 const LOCAL_KEYS = {
   PATIENTS: "dd_patients_v1",
   TASKS: "dd_tasks_v1",
@@ -109,12 +105,10 @@ function loadFromStorage(key, fallback) {
 }
 
 export default function DoctorDashboard() {
-  // Core data
   const [patients, setPatients] = useState(() => loadFromStorage(LOCAL_KEYS.PATIENTS, initialPatients));
   const [tasks, setTasks] = useState(() => loadFromStorage(LOCAL_KEYS.TASKS, initialTasks));
   const [appointments, setAppointments] = useState(() => loadFromStorage(LOCAL_KEYS.APPTS, initialAppts));
 
-  // UI state
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -126,7 +120,6 @@ export default function DoctorDashboard() {
   const pageSize = 6;
   const searchInputRef = useRef(null);
 
-  // Derived metrics
   const stats = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const patientsToday = appointments.filter((a) => a.time.slice(0, 10) === today).length;
@@ -138,18 +131,15 @@ export default function DoctorDashboard() {
     ];
   }, [appointments, tasks]);
 
-  // Debounce search
   useEffect(() => {
     const id = setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => clearTimeout(id);
   }, [query]);
 
-  // Persist to localStorage
   useEffect(() => saveToStorage(LOCAL_KEYS.PATIENTS, patients), [patients]);
   useEffect(() => saveToStorage(LOCAL_KEYS.TASKS, tasks), [tasks]);
   useEffect(() => saveToStorage(LOCAL_KEYS.APPTS, appointments), [appointments]);
 
-  // Keyboard shortcut: focus search on '/'
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "/" && document.activeElement !== searchInputRef.current) {
@@ -161,7 +151,6 @@ export default function DoctorDashboard() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  // Filtering, searching, sorting
   const filtered = useMemo(() => {
     let list = [...patients];
     if (filters.gender !== "All") list = list.filter((p) => p.gender === filters.gender);
@@ -194,8 +183,6 @@ export default function DoctorDashboard() {
   }, [totalPages]);
 
   const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
-
-  // Helpers: CSV export
   function exportCSV() {
     const rows = ["Name,Age,Gender,Condition,Last Visit"].concat(
       patients.map((p) => `${p.name},${p.age},${p.gender},${p.condition},${p.lastVisit}`)
@@ -209,7 +196,6 @@ export default function DoctorDashboard() {
     URL.revokeObjectURL(url);
   }
 
-  // Patient CRUD
   function handleSavePatient(updated) {
     setPatients((prev) => {
       const idx = prev.findIndex((p) => p.id === updated.id);
@@ -229,7 +215,6 @@ export default function DoctorDashboard() {
     setSelectedPatient(null);
   }
 
-  // Tasks
   function toggleTaskDone(id) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   }
@@ -238,13 +223,11 @@ export default function DoctorDashboard() {
     setTasks((prev) => [{ id: Date.now(), task: text, done: false }, ...prev]);
   }
 
-  // Appointments
   function addAppointment(payload) {
     setAppointments((prev) => [{ id: Date.now(), ...payload }, ...prev]);
     setShowAddAppt(false);
   }
 
-  // Small quick statistics for charts
   const conditionCounts = useMemo(() => {
     const map = {};
     patients.forEach((p) => (map[p.condition] = (map[p.condition] || 0) + 1));
@@ -262,7 +245,6 @@ export default function DoctorDashboard() {
     ];
   }, [patients]);
 
-  // Inline small toast
   const [toast, setToast] = useState(null);
   useEffect(() => {
     if (!toast) return;

@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -9,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore user from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -23,7 +21,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Role-based Redirect Helper
   const getRedirectPath = (role) => {
     switch (role) {
       case "doctor":
@@ -36,7 +33,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Save user + redirect
   const saveUser = (newUser, redirectTo) => {
     setUser(newUser);
     localStorage.setItem("user", JSON.stringify(newUser));
@@ -45,7 +41,6 @@ export const AuthProvider = ({ children }) => {
     navigate(path, { replace: true });
   };
 
-  // LOGIN
   const login = async ({
     email,
     password,
@@ -79,7 +74,6 @@ export const AuthProvider = ({ children }) => {
     return loggedUser;
   };
 
-  // REGISTER 
   const register = async ({ email, password, role = "patient", redirectTo }) => {
     const newUser = {
       email,
@@ -91,7 +85,6 @@ export const AuthProvider = ({ children }) => {
     return newUser;
   };
 
-  // Guest login
   const guestLogin = () => {
     const guestUser = {
       email: "guest@demo.com",
@@ -103,7 +96,6 @@ export const AuthProvider = ({ children }) => {
     return guestUser;
   };
 
-  // LOGOUT
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
@@ -111,7 +103,6 @@ export const AuthProvider = ({ children }) => {
     navigate("/login", { replace: true });
   };
 
-  // Context Provider
   return (
     <AuthContext.Provider
       value={{

@@ -1,4 +1,3 @@
-// src/components/layout/Navbar.jsx
 import React, { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ------------------ TRANSLATIONS ------------------ */
 const translations = {
   en: {
     nav: {
@@ -93,7 +91,6 @@ export default function Navbar() {
   const { lang } = useContext(LanguageContext);
   const [isOpen, setIsOpen] = useState(false);
 
-  // ------------ Translator Function ------------
   const t = (key) => {
     const parts = key.split(".");
     let cur = translations[lang] || translations.en;
@@ -104,7 +101,6 @@ export default function Navbar() {
     return typeof cur === "string" ? cur : key;
   };
 
-  // ------------ Nav Items ------------
   const navItemsPublic = [
     { label: t("nav.home"), path: "/", icon: <Home size={18} /> },
     { label: t("nav.about"), path: "/about", icon: <Info size={18} /> },

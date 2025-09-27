@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,7 +9,6 @@ import {
 } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
-// === Multilingual Support ===
 const LANGS = {
   en: {
     appName: "MediLink360",
@@ -68,8 +66,6 @@ const LANGS = {
 export default function Home() {
   const navigate = useNavigate();
   const { lang, setLang } = useContext(LanguageContext);
-
-  // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
   const [showIosBanner, setShowIosBanner] = useState(false);
@@ -77,7 +73,6 @@ export default function Home() {
 
   const t = LANGS[lang] || LANGS.en;
 
-  // Detect browser language if none set
   useEffect(() => {
     if (!lang) {
       const browserLang = navigator.language.slice(0, 2);
@@ -85,7 +80,6 @@ export default function Home() {
     }
   }, [lang, setLang]);
 
-  // Install + iOS handling
   useEffect(() => {
     const isIos = /iphone|ipad|ipod/.test(
       window.navigator.userAgent.toLowerCase()
@@ -146,7 +140,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
-      {/* === Offline Banner === */}
 <AnimatePresence>
   {isOffline && (
     <motion.div
@@ -167,7 +160,6 @@ export default function Home() {
 </AnimatePresence>
 
 
-      {/* === iOS Install Banner === */}
       <AnimatePresence>
         {showIosBanner && (
           <motion.div
@@ -181,7 +173,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Language Selection Modal (only if no language set yet) */}
       <AnimatePresence>
         {!lang && (
           <motion.div

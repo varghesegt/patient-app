@@ -1,9 +1,7 @@
-// src/pages/FirstAidPage.jsx
 import React, { useState, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageContext } from "../context/LanguageContext";
 
-// Multi-language content
 const LANGS = {
   en: {
     header: "🩺 Advanced First Aid Guide",
@@ -64,7 +62,6 @@ const LANGS = {
   },
 };
 
-// Tips content in all 3 languages
 const TIPS = {
   en: [
     { title: "🫀 CPR Basics", category: "Life-Saving", desc: "Check responsiveness, call emergency services, and begin chest compressions. Push hard and fast at 100–120 per minute.", extra: "If trained, provide rescue breaths (30:2 ratio). Continue until help arrives." },

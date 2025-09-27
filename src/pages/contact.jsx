@@ -1,10 +1,8 @@
-// src/pages/Contact.jsx
 import React, { useState, useContext } from "react";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Send, Info } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
-// ✅ Translations
 const LANGS = {
   en: {
     title: "Get in Touch",
@@ -69,7 +67,6 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: integrate backend/email service
     setSubmitted(true);
     setForm({ name: "", email: "", message: "" });
   };

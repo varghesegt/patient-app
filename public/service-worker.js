@@ -1,7 +1,6 @@
 const CACHE_NAME = "medilink360-cache-v2";
 const PRECACHE_ASSETS = ["/", "/index.html", "/manifest.json"];
 
-// ✅ Install
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS))
@@ -9,7 +8,6 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// ✅ Activate
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -19,7 +17,6 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// ✅ Fetch
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 

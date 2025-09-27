@@ -23,7 +23,7 @@ import {
   Clock,
   Microscope,
   SortAsc,
-  Wind, // ✅ Pulmonology icon imported
+  Wind, 
 } from "lucide-react";
 
 export default function ConsultDoctor() {
@@ -173,8 +173,6 @@ const doctors = [
   },
 ];
 
-
-  // Filtering
   let filteredDoctors = doctors.filter(
     (doc) =>
       (filter === "All" || doc.specialty === filter) &&
@@ -182,7 +180,6 @@ const doctors = [
       doc.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Sorting
   if (sortBy === "rating") {
     filteredDoctors = filteredDoctors.sort((a, b) => b.rating - a.rating);
   } else if (sortBy === "experience") {

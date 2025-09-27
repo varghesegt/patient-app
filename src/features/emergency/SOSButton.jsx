@@ -10,18 +10,16 @@ import {
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 
-export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integrate SMS */, smsCountryPrefix = "+91" }) {
+export default function SOSButtonAdvanced({ onSendOTP , smsCountryPrefix = "+91" }) {
   const { triggerSOS } = useContext(EmergencyContext);
-
-  // UI state
-  const [status, setStatus] = useState("idle"); // idle | sending | success | error
-  const [incident, setIncident] = useState("accident"); // accident | stroke | other
+  const [status, setStatus] = useState("idle"); 
+  const [incident, setIncident] = useState("accident"); 
   const [useLiveLocation, setUseLiveLocation] = useState(true);
   const [customLocation, setCustomLocation] = useState("");
   const [coords, setCoords] = useState(null);
   const [nearbyHospitals, setNearbyHospitals] = useState([]);
   const [selectedHospital, setSelectedHospital] = useState(null);
-  const [hospitalFilter, setHospitalFilter] = useState("any"); // any | government | private
+  const [hospitalFilter, setHospitalFilter] = useState("any"); 
 
   // OTP flow
   const [phone, setPhone] = useState("");
@@ -33,7 +31,6 @@ export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integr
   const otpTimerRef = useRef(null);
   const [otpCountdown, setOtpCountdown] = useState(0);
 
-  // keyboard shortcut S
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key.toLowerCase() === "s" && status === "idle") {
@@ -44,36 +41,27 @@ export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integr
     return () => window.removeEventListener("keydown", handleKey);
   }, [status, incident, useLiveLocation, coords, selectedHospital]);
 
-  // watch coords to fetch hospitals
   useEffect(() => {
     if (coords) fetchNearbyHospitals(coords.lat, coords.lon);
   }, [coords]);
 
-  // OTP countdown
   useEffect(() => {
     if (otpCountdown <= 0) return;
     const t = setInterval(() => setOtpCountdown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(t);
   }, [otpCountdown]);
 
-  // Helper: open confirmation (modal) before sending, here we open OTP modal
   const openConfirmAndStart = () => {
-    // bring up OTP flow
     setVerified(false);
     setOtpSent(false);
     setEnteredOtp("");
     setStatus("idle");
-    // try to get live location proactively
     if (useLiveLocation) getLiveLocation();
-    // fetch hospitals will be triggered by coords effect
-    // UI will show OTP modal for verification
     setShowModal(true);
   };
 
-  // Modal control
   const [showModal, setShowModal] = useState(false);
 
-  // ======= LOCATION =======
   async function getLiveLocation() {
     if (!navigator.geolocation) {
       console.warn("Geolocation not available");
@@ -96,7 +84,6 @@ export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integr
     });
   }
 
-  // If user toggles to custom location, try to geocode the custom location using Nominatim
   async function geocodeLocation(query) {
     if (!query) return null;
     try {
@@ -115,8 +102,6 @@ export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integr
     return null;
   }
 
-  // ======= HOSPITALS (Overpass) =======
-  // Query Overpass API for hospitals within a radius (meters)
   async function fetchNearbyHospitals(lat, lon, radius = 5000) {
     setNearbyHospitals([]);
     try {
@@ -152,15 +137,12 @@ export default function SOSButtonAdvanced({ onSendOTP /* optional hook to integr
         };
       });
 
-      // sort by distance
       normalized.sort((a, b) => a.distance - b.distance);
       setNearbyHospitals(normalized);
 
-      // auto-select hospital according to filter (govt fallback)
       const gov = normalized.find((h) => h.isGovernment);
       const first = normalized[0] || null;
       if (!selectedHospital) {
-        // pick by filter
         if (hospitalFilter === "government") setSelectedHospital(gov || first);
         else if (hospitalFilter === "private") setSelectedHospital(normalized.find((h) => h.isPrivate) || first);
         else setSelectedHospital(first);
