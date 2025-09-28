@@ -15,25 +15,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import OfflineSMS from "../features/emergency/OfflineSMS";
 
-/**
- * Emergency.jsx
- * - Original features preserved (OTP, manual SOS, offline queue, hospital lookup)
- * - Added Automatic SOS Triggering via DeviceMotion (crash/fall detection)
- *
- * How it works:
- * - Listens to device motion events and computes acceleration magnitude.
- * - If magnitude > IMPACT_THRESHOLD → assume crash detected.
- * - Show cancelable modal with countdown (CRASH_COUNTDOWN_MS). If not canceled, call handleSOS(true, "accident").
- *
- * Important:
- * - iOS requires user gesture to request DeviceMotion permission. The component attempts to request permission when user toggles "Enable Crash Detection".
- * - For production reliability/background detection use a native wrapper (Capacitor / native app).
- */
-
 export default function Emergency() {
-  // -------------------
-  // UI & SOS states
-  // -------------------
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -49,23 +31,17 @@ export default function Emergency() {
   const [nearbyHospitals, setNearbyHospitals] = useState({ gov: [], priv: [] });
   const [loadingHospitals, setLoadingHospitals] = useState(false);
   const [hiddenTypes, setHiddenTypes] = useState([]);
-
-  // OTP + type
   const [otpStep, setOtpStep] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState("");
   const [enteredOtp, setEnteredOtp] = useState("");
   const [selectedType, setSelectedType] = useState(null);
   const [useLiveLoc, setUseLiveLoc] = useState(true);
-
-  // Crash detection states
   const [crashDetectionEnabled, setCrashDetectionEnabled] = useState(false);
   const [crashDetected, setCrashDetected] = useState(false);
-  const [crashCountdownMs, setCrashCountdownMs] = useState(7000); // 7s countdown
+  const [crashCountdownMs, setCrashCountdownMs] = useState(10000); 
   const crashTimerRef = useRef(null);
   const countdownIntervalRef = useRef(null);
   const crashTimeoutRef = useRef(null);
-
-  // Refs
   const emergencyTypesRef = useRef([
     { id: "accident", label: "Accident" },
     { id: "stroke", label: "Stroke" },
@@ -74,14 +50,9 @@ export default function Emergency() {
     { id: "other", label: "Other" },
   ]);
 
-  // Config (tune for your tests)
-  const IMPACT_THRESHOLD = 35; // magnitude threshold (adjust after testing)
-  const CRASH_COUNTDOWN_MS = crashCountdownMs; // ms to wait before auto-sending SOS
-  const DEVICE_MOTION_POLL_INTERVAL = 250; // ms sampling
-
-  // -------------------
-  // Effects: online/offline & localStorage
-  // -------------------
+  const IMPACT_THRESHOLD = 35;
+  const CRASH_COUNTDOWN_MS = crashCountdownMs; 
+  const DEVICE_MOTION_POLL_INTERVAL = 250; 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -97,7 +68,6 @@ export default function Emergency() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOnline]);
 
   useEffect(() => {
@@ -108,9 +78,6 @@ export default function Emergency() {
     localStorage.setItem("sosHistory", JSON.stringify(history));
   }, [history]);
 
-  // -------------------
-  // Helper methods: history & queue
-  // -------------------
   const saveToHistory = (data) =>
     setHistory((prev) => [data, ...prev].slice(0, 10));
 
@@ -138,9 +105,6 @@ export default function Emergency() {
     return keywords.some((k) => name.toLowerCase().includes(k));
   };
 
-  // -------------------
-  // Nearby hospitals via Overpass API
-  // -------------------
   const fetchNearbyHospitals = async (lat, lng, radius = 5000) => {
     try {
       setLoadingHospitals(true);
@@ -184,9 +148,6 @@ export default function Emergency() {
     }
   };
 
-  // -------------------
-  // Queue flushing
-  // -------------------
   const flushQueue = async () => {
     if (!isOnline || sosQueue.length === 0) return;
     const remaining = [];
@@ -206,9 +167,6 @@ export default function Emergency() {
     setSosQueue(remaining);
   };
 
-  // -------------------
-  // OTP flow (unchanged)
-  // -------------------
   const requestOtp = (type, useLive) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedOtp(otp);
@@ -231,9 +189,6 @@ export default function Emergency() {
     await handleSOS(useLiveLoc, selectedType);
   };
 
-  // -------------------
-  // Core SOS handler (original, reused)
-  // -------------------
   const handleSOS = async (useLiveLocation, type = "other") => {
     try {
       setSending(true);
@@ -309,9 +264,6 @@ export default function Emergency() {
     }
   };
 
-  // -------------------
-  // Modal opener (unchanged)
-  // -------------------
   const openModal = () => {
     setModalOpen(true);
     navigator.geolocation.getCurrentPosition(
@@ -320,14 +272,10 @@ export default function Emergency() {
     );
   };
 
-  // -------------------
-  // Crash detection: permission request for iOS (user gesture required)
-  // -------------------
   const requestMotionPermission = async () => {
-    // iOS 13+ requires DeviceMotionEvent.requestPermission()
     try {
       if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
-        const perm = await DeviceMotionEvent.requestPermission(); // user gesture is required to call this
+        const perm = await DeviceMotionEvent.requestPermission(); 
         if (perm === "granted") {
           console.log("DeviceMotion permission granted");
           return true;
@@ -336,7 +284,6 @@ export default function Emergency() {
           return false;
         }
       }
-      // If API not present, assume permission not needed (Android/Chrome)
       return true;
     } catch (err) {
       console.warn("Motion permission request failed:", err);
@@ -344,9 +291,6 @@ export default function Emergency() {
     }
   };
 
-  // -------------------
-  // Crash detection core: event handler and lifecycle
-  // -------------------
   useEffect(() => {
     let lastSampleTime = 0;
     let lastAccel = { x: 0, y: 0, z: 0 };
@@ -362,11 +306,7 @@ export default function Emergency() {
       const ax = acc.x || 0;
       const ay = acc.y || 0;
       const az = acc.z || 0;
-
-      // Magnitude (approx g-forces)
       const magnitude = Math.sqrt(ax * ax + ay * ay + az * az);
-
-      // Detect large sudden impact — simple threshold approach
       if (magnitude > IMPACT_THRESHOLD && !crashDetected) {
         console.log("Impact detected, magnitude:", magnitude);
         triggerCrashDetected();
@@ -375,7 +315,6 @@ export default function Emergency() {
       lastAccel = { x: ax, y: ay, z: az };
     };
 
-    // If crash detection enabled, attach handlers
     if (crashDetectionEnabled) {
       window.addEventListener("devicemotion", handleMotion);
     }
@@ -384,10 +323,7 @@ export default function Emergency() {
       window.removeEventListener("devicemotion", handleMotion);
       clearCrashTimers();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [crashDetectionEnabled, crashDetected]);
-
-  // Clears timers and intervals used for crash countdown
   const clearCrashTimers = () => {
     if (crashTimerRef.current) {
       clearTimeout(crashTimerRef.current);
@@ -403,43 +339,34 @@ export default function Emergency() {
     }
   };
 
-  // Called when an impact is detected
   const triggerCrashDetected = () => {
     setCrashDetected(true);
-
-    // Vibrate and show UI
     vibrateSupported && navigator.vibrate([300, 100, 300]);
-
-    // Start a countdown timer to auto-send SOS unless canceled
     let remaining = CRASH_COUNTDOWN_MS;
     const intervalMs = 250;
     const startedAt = Date.now();
 
-    // Update a countdown by updating state (optional: show seconds)
     countdownIntervalRef.current = setInterval(() => {
       remaining = CRASH_COUNTDOWN_MS - (Date.now() - startedAt);
       if (remaining <= 0) {
         clearInterval(countdownIntervalRef.current);
         countdownIntervalRef.current = null;
       }
-      // keep state stable — you can add a visible countdown if desired
       setCrashCountdownMs(Math.max(0, remaining));
     }, intervalMs);
 
     crashTimerRef.current = setTimeout(async () => {
-      // Auto-trigger SOS (accident). We call handleSOS with useLiveLocation true
       try {
         await handleSOS(true, "accident");
       } catch (e) {
         console.error("Auto SOS failed:", e);
       } finally {
         setCrashDetected(false);
-        setCrashCountdownMs(CRASH_COUNTDOWN_MS); // reset
+        setCrashCountdownMs(CRASH_COUNTDOWN_MS); 
         clearCrashTimers();
       }
     }, CRASH_COUNTDOWN_MS);
 
-    // Safety net: clear after some max time
     crashTimeoutRef.current = setTimeout(() => {
       setCrashDetected(false);
       setCrashCountdownMs(CRASH_COUNTDOWN_MS);
@@ -447,7 +374,6 @@ export default function Emergency() {
     }, CRASH_COUNTDOWN_MS + 15000);
   };
 
-  // User cancels crash countdown
   const cancelCrashDetection = () => {
     clearCrashTimers();
     setCrashDetected(false);
@@ -456,7 +382,6 @@ export default function Emergency() {
     vibrateSupported && navigator.vibrate([100, 50]);
   };
 
-  // Toggle crash detection with permission flow (for iOS)
   const toggleCrashDetection = async (enable) => {
     if (enable) {
       const permissionOk = await requestMotionPermission();
@@ -474,9 +399,6 @@ export default function Emergency() {
     }
   };
 
-  // -------------------
-  // Render
-  // -------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 sm:p-10 relative overflow-hidden">
       {/* Glowing Background */}

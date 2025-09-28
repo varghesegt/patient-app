@@ -291,10 +291,10 @@ export default function useTriage() {
       const timeoutId = setTimeout(() => {
         requestAmbulance({ reason: reasons, urgency: label });
         setPendingAmbulance(null);
-      }, 10000);
+      }, 5000);
 
       setPendingAmbulance({
-        deadline: Date.now() + 10000,
+        deadline: Date.now() + 3000,
         cancel: () => {
           clearTimeout(timeoutId);
           setPendingAmbulance(null);
