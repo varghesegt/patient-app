@@ -378,7 +378,6 @@ export default function Emergency() {
     clearCrashTimers();
     setCrashDetected(false);
     setCrashCountdownMs(CRASH_COUNTDOWN_MS);
-    // Optional: small vibration to confirm cancel
     vibrateSupported && navigator.vibrate([100, 50]);
   };
 

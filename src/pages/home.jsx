@@ -1,12 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  HeartPulse,
-  AlertTriangle,
-  Hospital,
-  Globe,
-} from "lucide-react";
+import { HeartPulse, AlertTriangle, Hospital, Globe } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
 const LANGS = {
@@ -81,9 +76,7 @@ export default function Home() {
   }, [lang, setLang]);
 
   useEffect(() => {
-    const isIos = /iphone|ipad|ipod/.test(
-      window.navigator.userAgent.toLowerCase()
-    );
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
     const isInStandalone = window.navigator.standalone === true;
 
     if (isIos && !isInStandalone) {
@@ -99,7 +92,6 @@ export default function Home() {
 
     window.addEventListener("beforeinstallprompt", handler);
     window.addEventListener("appinstalled", () => {
-      console.log("✅ MediLink360 installed");
       setShowInstall(false);
       setShowIosBanner(false);
     });
@@ -139,27 +131,25 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
-<AnimatePresence>
-  {isOffline && (
-    <motion.div
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -50, opacity: 0 }}
-      className="fixed top-0 inset-x-0 bg-red-600 text-white py-2 px-4 flex items-center justify-between text-sm z-50"
-    >
-      <span>⚠️ {t.appName} {t.offline}</span>
-      <button
-        onClick={() => setIsOffline(false)}
-        className="ml-4 text-white hover:text-gray-200 font-bold text-lg"
-      >
-        ×
-      </button>
-    </motion.div>
-  )}
-</AnimatePresence>
+    <div className="h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 relative">
+      {/* Offline Alert */}
+      <AnimatePresence>
+        {isOffline && (
+          <motion.div
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            className="fixed top-0 inset-x-0 bg-red-600 text-white py-2 px-4 flex items-center justify-between text-sm z-50"
+          >
+            <span>⚠️ {t.appName} {t.offline}</span>
+            <button onClick={() => setIsOffline(false)} className="ml-4 text-white hover:text-gray-200 font-bold text-lg">
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-
+      {/* iOS Install Banner */}
       <AnimatePresence>
         {showIosBanner && (
           <motion.div
@@ -173,6 +163,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Language Picker Modal */}
       <AnimatePresence>
         {!lang && (
           <motion.div
@@ -185,27 +176,27 @@ export default function Home() {
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm text-center"
+              className="bg-white rounded-3xl shadow-2xl p-6 max-w-sm text-center"
             >
-              <h2 className="text-2xl font-bold text-sky-700 mb-6">
+              <h2 className="text-xl font-bold text-sky-700 mb-4">
                 🌐 {LANGS.en.chooseLang}
               </h2>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => chooseLanguage("en")}
-                  className="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold"
+                  className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold"
                 >
                   English
                 </button>
                 <button
                   onClick={() => chooseLanguage("hi")}
-                  className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold"
+                  className="px-5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold"
                 >
                   हिन्दी
                 </button>
                 <button
                   onClick={() => chooseLanguage("ta")}
-                  className="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-semibold"
+                  className="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-semibold"
                 >
                   தமிழ்
                 </button>
@@ -218,12 +209,12 @@ export default function Home() {
       {lang && (
         <>
           {/* Floating Language Switcher */}
-          <div className="absolute top-6 right-6 z-40 flex items-center gap-2 bg-white border rounded-lg shadow-md px-3 py-1 hover:shadow-lg transition">
+          <div className="absolute top-4 right-4 z-40 flex items-center gap-2 bg-white border rounded-lg shadow px-2 py-1">
             <Globe className="w-4 h-4 text-sky-600" />
             <select
               value={lang}
               onChange={(e) => chooseLanguage(e.target.value)}
-              className="bg-transparent focus:outline-none text-gray-700 font-medium cursor-pointer"
+              className="bg-transparent focus:outline-none text-gray-700 font-medium text-sm"
             >
               <option value="en">English</option>
               <option value="hi">हिन्दी</option>
@@ -232,15 +223,14 @@ export default function Home() {
           </div>
 
           {/* Hero Section */}
-          <section className="flex-1 flex flex-col justify-center items-center text-center px-6 py-24 relative overflow-hidden">
+          <section className="flex-1 flex flex-col justify-center items-center text-center px-4 py-12 sm:py-20 relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-200/40 to-sky-100/20 blur-3xl -z-10" />
 
             <motion.h1
-              initial={{ opacity: 0, y: -30 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-              className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-sky-700 leading-tight"
-
+              transition={{ duration: 0.6 }}
+              className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-sky-700 leading-snug"
             >
               {t.appName}
             </motion.h1>
@@ -248,8 +238,8 @@ export default function Home() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="mt-6 text-lg sm:text-xl md:text-2xl text-gray-700 max-w-3xl"
+              transition={{ delay: 0.3 }}
+              className="mt-4 text-base sm:text-lg md:text-xl text-gray-700 max-w-xl sm:max-w-3xl"
             >
               {t.tagline}
             </motion.p>
@@ -258,60 +248,54 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mt-12 flex flex-col sm:flex-row gap-5"
+              transition={{ delay: 0.5 }}
+              className="mt-8 flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
               <Link
                 to="/login"
-                className="px-6 py-3 rounded-xl font-semibold shadow-lg bg-sky-600 text-white hover:bg-sky-700 hover:scale-105 transition"
+                className="px-5 py-2.5 rounded-xl font-semibold shadow bg-sky-600 text-white hover:bg-sky-700"
               >
                 {t.login}
               </Link>
-              <Link
-                to="/register"
-                className="px-6 py-3 rounded-xl font-semibold shadow-lg border border-sky-600 text-sky-700 hover:bg-sky-50 hover:scale-105 transition"
-              >
-                {t.register}
-              </Link>
             </motion.div>
 
-            {/* Guest Quick Access */}
+            {/* Quick Access */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
-              className="mt-14 w-full max-w-3xl bg-white/80 backdrop-blur-md rounded-2xl shadow-xl p-6"
+              transition={{ delay: 0.7 }}
+              className="mt-8 w-full max-w-xl sm:max-w-3xl bg-white/80 backdrop-blur rounded-2xl shadow-lg p-4 sm:p-6"
             >
-              <h3 className="text-lg font-semibold text-sky-700 mb-6">
+              <h3 className="text-base sm:text-lg font-semibold text-sky-700 mb-4 sm:mb-6">
                 {t.quickAccess}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
                 <button
                   onClick={() => enableGuestAndNavigate("/emergency")}
-                  className="flex flex-col items-center justify-center p-6 rounded-xl bg-red-50 hover:bg-red-100 shadow-md hover:shadow-lg transition"
+                  className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl bg-red-50 hover:bg-red-100 shadow-md"
                 >
-                  <AlertTriangle className="text-red-500 mb-3" size={40} />
-                  <span className="font-semibold text-gray-800">
+                  <AlertTriangle className="text-red-500 mb-2 sm:mb-3" size={32} />
+                  <span className="font-medium text-gray-800 text-sm sm:text-base">
                     {t.emergency}
                   </span>
                 </button>
 
                 <button
                   onClick={() => enableGuestAndNavigate("/symptoms")}
-                  className="flex flex-col items-center justify-center p-6 rounded-xl bg-sky-50 hover:bg-sky-100 shadow-md hover:shadow-lg transition"
+                  className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl bg-sky-50 hover:bg-sky-100 shadow-md"
                 >
-                  <HeartPulse className="text-sky-500 mb-3" size={40} />
-                  <span className="font-semibold text-gray-800">
+                  <HeartPulse className="text-sky-500 mb-2 sm:mb-3" size={32} />
+                  <span className="font-medium text-gray-800 text-sm sm:text-base">
                     {t.symptoms}
                   </span>
                 </button>
 
                 <button
                   onClick={() => enableGuestAndNavigate("/hospital")}
-                  className="flex flex-col items-center justify-center p-6 rounded-xl bg-green-50 hover:bg-green-100 shadow-md hover:shadow-lg transition"
+                  className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl bg-green-50 hover:bg-green-100 shadow-md"
                 >
-                  <Hospital className="text-green-500 mb-3" size={40} />
-                  <span className="font-semibold text-gray-800">
+                  <Hospital className="text-green-500 mb-2 sm:mb-3" size={32} />
+                  <span className="font-medium text-gray-800 text-sm sm:text-base">
                     {t.hospital}
                   </span>
                 </button>
@@ -323,11 +307,11 @@ export default function Home() {
           <AnimatePresence>
             {showInstall && (
               <motion.button
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
                 onClick={handleInstall}
-                className="fixed bottom-6 right-6 px-5 py-3 bg-sky-600 text-white font-semibold rounded-xl shadow-lg hover:bg-sky-700 hover:scale-105 transition z-50"
+                className="fixed bottom-4 right-4 px-4 py-2.5 bg-sky-600 text-white text-sm font-semibold rounded-xl shadow-lg hover:bg-sky-700"
               >
                 {t.install}
               </motion.button>
@@ -335,11 +319,9 @@ export default function Home() {
           </AnimatePresence>
 
           {/* Footer */}
-          <footer className="bg-sky-700 text-white py-6 text-center text-sm">
-            <p>
-              © {new Date().getFullYear()} {t.appName}.{" "}
-              <span className="font-semibold">{t.footer}</span>.
-            </p>
+          <footer className="bg-sky-700 text-white py-3 text-center text-xs sm:text-sm">
+            © {new Date().getFullYear()} {t.appName}.{" "}
+            <span className="font-semibold">{t.footer}</span>
           </footer>
         </>
       )}
