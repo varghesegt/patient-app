@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+/* 🌍 Translations */
 const translations = {
   en: {
     nav: {
@@ -101,6 +102,7 @@ export default function Navbar() {
     return typeof cur === "string" ? cur : key;
   };
 
+  /* 🔹 Role-Based Menu Items */
   const navItemsPublic = [
     { label: t("nav.home"), path: "/", icon: <Home size={18} /> },
     { label: t("nav.about"), path: "/about", icon: <Info size={18} /> },
@@ -143,21 +145,21 @@ export default function Navbar() {
   const handleLogout = () => logout && logout();
 
   return (
-    <nav className="bg-gradient-to-r from-sky-700/90 via-sky-800/90 to-sky-900/90 backdrop-blur-xl sticky top-0 z-50 shadow-lg border-b border-sky-600">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-gradient-to-r from-[#0f172a]/95 via-[#1e293b]/95 to-[#0f172a]/95 border-b border-sky-700 shadow-[0_2px_15px_rgba(0,0,0,0.5)]">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 sm:px-6 lg:px-8 py-3">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
           <img
             src="/logo.png"
             alt="MediLink360 Logo"
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg shadow-md transition-transform group-hover:scale-110"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
           />
-          <span className="text-lg sm:text-xl md:text-2xl font-bold tracking-wide text-white">
+          <span className="text-lg sm:text-xl md:text-2xl font-extrabold tracking-wide text-white drop-shadow-md">
             MediLink360
           </span>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Navigation */}
         <ul className="hidden md:flex gap-6 items-center">
           {navItems.map(({ label, path, onClick, icon }) => {
             const active = path && pathname === path;
@@ -167,17 +169,17 @@ export default function Navbar() {
                 {clickHandler ? (
                   <button
                     onClick={() => clickHandler()}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:text-yellow-300 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white hover:text-yellow-300 transition-colors duration-300"
                   >
                     {icon} <span className="font-medium">{label}</span>
                   </button>
                 ) : (
                   <Link
                     to={path}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 ${
                       active
                         ? "text-yellow-300 font-semibold"
-                        : "text-white hover:text-yellow-300"
+                        : "text-gray-200 hover:text-yellow-300"
                     }`}
                   >
                     {icon} <span className="font-medium">{label}</span>
@@ -194,25 +196,25 @@ export default function Navbar() {
           })}
         </ul>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle Button */}
         <button
-          className="md:hidden flex items-center p-2 rounded-lg hover:bg-sky-600 transition"
+          className="md:hidden flex items-center p-2 rounded-lg hover:bg-sky-800 transition"
           onClick={() => setIsOpen((s) => !s)}
           aria-label="Toggle menu"
         >
-          {isOpen ? <X size={26} /> : <Menu size={26} />}
+          {isOpen ? <X size={26} className="text-white" /> : <Menu size={26} className="text-white" />}
         </button>
       </div>
 
-      {/* Mobile Nav */}
+      {/* Mobile Navigation */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden bg-sky-900/95 backdrop-blur-xl shadow-lg border-t border-sky-700"
+            transition={{ duration: 0.4 }}
+            className="md:hidden bg-[#0f172a]/95 backdrop-blur-2xl shadow-2xl border-t border-sky-800"
           >
             <ul className="flex flex-col gap-2 py-4 px-6">
               {navItems.map(({ label, path, onClick, icon }) => {
@@ -226,7 +228,7 @@ export default function Navbar() {
                           clickHandler();
                           setIsOpen(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-yellow-200 hover:text-sky-900 transition duration-300"
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-yellow-200 hover:text-sky-900 transition duration-300"
                       >
                         {icon} <span className="font-medium">{label}</span>
                       </button>
@@ -250,6 +252,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 }

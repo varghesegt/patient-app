@@ -1,6 +1,7 @@
 import React, { lazy } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import Footer from "../components/layout/Footer"; // ✅ added
 
 const Home = lazy(() => import("../pages/home.jsx"));
 const Login = lazy(() => import("../pages/login.jsx"));
@@ -111,44 +112,60 @@ const hospitalRoutes = [{ path: "/hospitaldashboard", element: <HospitalDashboar
 
 export default function AppRouter() {
   return (
-    <Routes>
-      {publicRoutes.map((route) => (
-        <Route key={route.path} path={route.path} element={route.element} />
-      ))}
+    <>
+      <Routes>
+        {publicRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
 
-      {patientRoutes.map((route) => (
+        {patientRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <PrivateRoute roles={["patient", "guest"]}>
+                {route.element}
+              </PrivateRoute>
+            }
+          />
+        ))}
+
+        {doctorRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <PrivateRoute roles={["doctor"]}>
+                {route.element}
+              </PrivateRoute>
+            }
+          />
+        ))}
+
+        {hospitalRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <PrivateRoute roles={["admin", "hospital"]}>
+                {route.element}
+              </PrivateRoute>
+            }
+          />
+        ))}
+
         <Route
-          key={route.path}
-          path={route.path}
-          element={<PrivateRoute roles={["patient", "guest"]}>{route.element}</PrivateRoute>}
+          path="*"
+          element={
+            <div className="flex flex-col items-center justify-center py-20 text-gray-600">
+              <h2 className="text-2xl font-bold">404 - Page Not Found</h2>
+              <p className="mt-2">The page you are looking for does not exist.</p>
+            </div>
+          }
         />
-      ))}
+      </Routes>
 
-      {doctorRoutes.map((route) => (
-        <Route
-          key={route.path}
-          path={route.path}
-          element={<PrivateRoute roles={["doctor"]}>{route.element}</PrivateRoute>}
-        />
-      ))}
-
-      {hospitalRoutes.map((route) => (
-        <Route
-          key={route.path}
-          path={route.path}
-          element={<PrivateRoute roles={["admin", "hospital"]}>{route.element}</PrivateRoute>}
-        />
-      ))}
-
-      <Route
-        path="*"
-        element={
-          <div className="flex flex-col items-center justify-center py-20 text-gray-600">
-            <h2 className="text-2xl font-bold">404 - Page Not Found</h2>
-            <p className="mt-2">The page you are looking for does not exist.</p>
-          </div>
-        }
-      />
-    </Routes>
+      <Footer /> {/* ✅ added */}
+    </>
   );
 }

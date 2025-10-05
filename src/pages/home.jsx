@@ -318,11 +318,6 @@ export default function Home() {
             )}
           </AnimatePresence>
 
-          {/* Footer */}
-          <footer className="bg-sky-700 text-white py-3 text-center text-xs sm:text-sm">
-            © {new Date().getFullYear()} {t.appName}.{" "}
-            <span className="font-semibold">{t.footer}</span>
-          </footer>
         </>
       )}
     </div>
