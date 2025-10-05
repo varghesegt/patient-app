@@ -14,8 +14,7 @@ import {
 } from "lucide-react";
 import { LanguageContext } from "../../context/LanguageContext";
 
-/* 🌍 Translations */
-
+/* 🌍 Translations — all keys present in every language */
 const STRINGS = {
   en: {
     recommendation: {
@@ -31,6 +30,8 @@ const STRINGS = {
     confidence: "Confidence",
     showReasons: "Show Reasons",
     hideReasons: "Hide Reasons",
+    nearbyDoctors: "Nearby Doctors",
+    bookNow: "Book Appointment",
   },
   hi: {
     recommendation: {
@@ -40,12 +41,14 @@ const STRINGS = {
     },
     callAmbulance: "एम्बुलेंस कॉल करें",
     shareLocation: "मेरा स्थान साझा करें",
-    fetchingLocation: "स्थान लाया जा रहा है...",
-    locationError: "❌ इस डिवाइस पर स्थान समर्थित नहीं है।",
-    locationDenied: "❌ स्थान तक पहुंच अस्वीकृत।",
+    fetchingLocation: "स्थान प्राप्त किया जा रहा है...",
+    locationError: "❌ यह डिवाइस स्थान का समर्थन नहीं करता।",
+    locationDenied: "❌ स्थान तक पहुँच अस्वीकृत।",
     confidence: "विश्वसनीयता",
     showReasons: "कारण दिखाएँ",
     hideReasons: "कारण छिपाएँ",
+    nearbyDoctors: "नज़दीकी डॉक्टर",
+    bookNow: "अपॉइंटमेंट बुक करें",
   },
   ta: {
     recommendation: {
@@ -59,34 +62,18 @@ const STRINGS = {
     locationError: "❌ இந்த சாதனத்தில் இருப்பிடம் ஆதரிக்கப்படவில்லை.",
     locationDenied: "❌ இருப்பிட அணுகல் மறுக்கப்பட்டது.",
     confidence: "நம்பகத்தன்மை",
-    showReasons: "காரணங்கள் காண்பி",
+    showReasons: "காரணங்களை காண்பி",
     hideReasons: "காரணங்களை மறை",
+    nearbyDoctors: "அருகிலுள்ள மருத்தவர்கள்",
+    bookNow: "நியமனம் பதிவு செய்யவும்",
   },
 };
 
-/** Dummy doctor list — replace with API later */
+/** Dummy doctors — replace with API later */
 const DUMMY_DOCTORS = [
-  {
-    name: "Dr. Aarav Mehta",
-    speciality: "General Physician",
-    distance: "1.2 km",
-    rating: 4.8,
-    link: "#",
-  },
-  {
-    name: "Dr. Priya Sharma",
-    speciality: "Internal Medicine",
-    distance: "2.0 km",
-    rating: 4.6,
-    link: "#",
-  },
-  {
-    name: "Dr. Karthik R",
-    speciality: "Family Medicine",
-    distance: "3.1 km",
-    rating: 4.5,
-    link: "#",
-  },
+  { name: "Dr. Aarav Mehta", speciality: "General Physician", distance: "1.2 km", rating: 4.8, link: "#" },
+  { name: "Dr. Priya Sharma", speciality: "Internal Medicine", distance: "2.0 km", rating: 4.6, link: "#" },
+  { name: "Dr. Karthik R", speciality: "Family Medicine", distance: "3.1 km", rating: 4.5, link: "#" },
 ];
 
 export default function ResultsCard({ result }) {
@@ -100,7 +87,7 @@ export default function ResultsCard({ result }) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
 
-  /** --- Dynamic theme colors --- */
+  /** Dynamic theme colors */
   const theme = (() => {
     switch (label) {
       case "CRITICAL":
@@ -111,6 +98,7 @@ export default function ResultsCard({ result }) {
           gradient: "bg-gradient-to-r from-red-500 to-red-700",
           recommendation: t.recommendation.CRITICAL,
           severe: true,
+          stroke: "#dc2626",
         };
       case "CAUTION":
         return {
@@ -120,6 +108,7 @@ export default function ResultsCard({ result }) {
           gradient: "bg-gradient-to-r from-orange-400 to-orange-600",
           recommendation: t.recommendation.CAUTION,
           severe: false,
+          stroke: "#ea580c",
         };
       default:
         return {
@@ -129,11 +118,12 @@ export default function ResultsCard({ result }) {
           gradient: "bg-gradient-to-r from-sky-400 to-sky-600",
           recommendation: t.recommendation.SAFE,
           severe: false,
+          stroke: "#0284c7",
         };
     }
   })();
 
-  /** --- Location sharing --- */
+  /** Location sharing logic */
   const shareLocation = () => {
     if (!navigator.geolocation) {
       setStatus(t.locationError);
@@ -146,9 +136,7 @@ export default function ResultsCard({ result }) {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        setStatus(
-          `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)} → [Open in Maps](${mapsUrl})`
-        );
+        setStatus(`📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)} → [Open in Maps](${mapsUrl})`);
         setLoading(false);
       },
       () => {
@@ -159,28 +147,29 @@ export default function ResultsCard({ result }) {
   };
 
   return (
-    <motion.div
+    <motion.section
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       className={`p-6 rounded-2xl border shadow-md transition ${theme.bg}`}
+      aria-live="polite"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* HEADER */}
+      <header className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           {theme.icon}
           <h3 className={`font-semibold text-lg ${theme.text}`}>{label}</h3>
         </div>
 
-        {/* Score ring */}
-        <div className="relative w-14 h-14">
-          <svg className="w-14 h-14 -rotate-90">
-            <circle cx="28" cy="28" r="24" stroke="#e5e7eb" strokeWidth="5" fill="transparent" />
+        {/* Score Ring */}
+        <div className="relative w-16 h-16">
+          <svg className="w-16 h-16 -rotate-90">
+            <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="5" fill="transparent" />
             <motion.circle
-              cx="28"
-              cy="28"
-              r="24"
-              stroke={theme.severe ? "#dc2626" : label === "CAUTION" ? "#ea580c" : "#0284c7"}
+              cx="32"
+              cy="32"
+              r="28"
+              stroke={theme.stroke}
               strokeWidth="5"
               strokeLinecap="round"
               fill="transparent"
@@ -193,9 +182,9 @@ export default function ResultsCard({ result }) {
             {score}%
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Confidence bar */}
+      {/* Confidence Bar */}
       <div className="mt-5">
         <div className="text-xs text-gray-600 mb-1">{t.confidence}</div>
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -214,7 +203,7 @@ export default function ResultsCard({ result }) {
         <span>{theme.recommendation}</span>
       </div>
 
-      {/* Emergency actions if severe */}
+      {/* Emergency actions */}
       {theme.severe && (
         <div className="mt-6 space-y-3">
           <button
@@ -253,7 +242,7 @@ export default function ResultsCard({ result }) {
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {DUMMY_DOCTORS.map((doc, i) => (
-              <motion.div
+              <motion.article
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -274,7 +263,7 @@ export default function ResultsCard({ result }) {
                 >
                   {t.bookNow}
                 </a>
-              </motion.div>
+              </motion.article>
             ))}
           </div>
         </div>
@@ -314,6 +303,6 @@ export default function ResultsCard({ result }) {
           </AnimatePresence>
         </div>
       )}
-    </motion.div>
+    </motion.section>
   );
 }
