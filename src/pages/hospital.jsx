@@ -4,6 +4,7 @@ import React, {
   useContext,
   useRef,
   useCallback,
+  memo,
 } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 import { motion } from "framer-motion";
@@ -20,18 +21,9 @@ import L from "leaflet";
 /* ✅ Fix Leaflet Default Icon Paths */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: new URL(
-    "leaflet/dist/images/marker-icon-2x.png",
-    import.meta.url
-  ).href,
-  iconUrl: new URL(
-    "leaflet/dist/images/marker-icon.png",
-    import.meta.url
-  ).href,
-  shadowUrl: new URL(
-    "leaflet/dist/images/marker-shadow.png",
-    import.meta.url
-  ).href,
+  iconRetinaUrl: new URL("leaflet/dist/images/marker-icon-2x.png", import.meta.url).href,
+  iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
+  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
 });
 
 /* ✅ Custom Icons */
@@ -43,7 +35,6 @@ const ICONS_URLS = {
   dentist: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
   blood_bank: "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
   laboratory: "https://cdn-icons-png.flaticon.com/512/3177/3177440.png",
-  medical_college: "https://cdn-icons-png.flaticon.com/512/3135/3135810.png",
   default: "https://cdn-icons-png.flaticon.com/512/3177/3177361.png",
 };
 
@@ -53,13 +44,10 @@ const buildIcon = (url, size = 38) =>
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
     popupAnchor: [0, -size / 1.5],
-    shadowUrl: new URL(
-      "leaflet/dist/images/marker-shadow.png",
-      import.meta.url
-    ).href,
+    shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
     shadowSize: [40, 40],
     shadowAnchor: [12, 40],
-  });
+});
 
 const icons = {
   hospital: buildIcon(ICONS_URLS.hospital, 42),
@@ -69,31 +57,28 @@ const icons = {
   dentist: buildIcon(ICONS_URLS.dentist, 34),
   blood_bank: buildIcon(ICONS_URLS.blood_bank, 36),
   laboratory: buildIcon(ICONS_URLS.laboratory, 34),
-  medical_college: buildIcon(ICONS_URLS.medical_college, 40),
   default: buildIcon(ICONS_URLS.default, 32),
 };
 
 const getIcon = (type = "") => {
   const key = type.toLowerCase();
-  if (icons[key]) return icons[key];
-  if (key.includes("hospital")) return icons.hospital;
-  if (key.includes("clinic")) return icons.clinic;
-  if (key.includes("pharmacy")) return icons.pharmacy;
-  if (key.includes("dentist")) return icons.dentist;
-  if (key.includes("blood")) return icons.blood_bank;
-  if (key.includes("lab")) return icons.laboratory;
-  if (key.includes("college") || key.includes("education"))
-    return icons.medical_college;
-  return icons.default;
+  return (
+    icons[key] ||
+    (key.includes("hospital") && icons.hospital) ||
+    (key.includes("clinic") && icons.clinic) ||
+    (key.includes("pharmacy") && icons.pharmacy) ||
+    (key.includes("dentist") && icons.dentist) ||
+    (key.includes("blood") && icons.blood_bank) ||
+    (key.includes("lab") && icons.laboratory) ||
+    icons.default
+  );
 };
 
-/* ✅ Recenter Map Component */
+/* ✅ Recenter Map */
 function RecenterMap({ lat, lng }) {
   const map = useMap();
   useEffect(() => {
-    if (lat && lng) {
-      map.setView([lat, lng], 13, { animate: true });
-    }
+    if (lat && lng) map.setView([lat, lng], 13, { animate: true });
   }, [lat, lng, map]);
   return null;
 }
@@ -122,7 +107,7 @@ const getDistanceKm = (loc1, loc2) => {
 };
 
 /* ✅ Overpass Query */
-const buildOverpassQuery = (lat, lng, radius = 20000) => `
+const buildOverpassQuery = (lat, lng, radius = 10000) => `
   [out:json];
   (
     node["amenity"~"hospital|clinic|pharmacy|doctors|dentist|blood_bank|laboratory"](around:${radius},${lat},${lng});
@@ -131,12 +116,45 @@ const buildOverpassQuery = (lat, lng, radius = 20000) => `
     node["healthcare"](around:${radius},${lat},${lng});
     way["healthcare"](around:${radius},${lat},${lng});
     relation["healthcare"](around:${radius},${lat},${lng});
-    node["education"="medical"](around:${radius},${lat},${lng});
-    way["education"="medical"](around:${radius},${lat},${lng});
-    relation["education"="medical"](around:${radius},${lat},${lng});
   );
   out center;
 `;
+
+/* ✅ Memoized Card */
+const HospitalCard = memo(function HospitalCard({ p, userLocation, onClick }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.03 }}
+      className="p-5 bg-white rounded-xl shadow-md hover:shadow-xl transition flex flex-col justify-between"
+      onClick={() => onClick(p)}
+    >
+      <div>
+        <h2 className="text-lg font-semibold text-blue-700">{p.name}</h2>
+        <p className="text-sm text-gray-700 mt-2 flex items-center gap-1">
+          {p.distance < 2 ? "🚶" : "🚗"}{" "}
+          <span className="font-medium">{p.distance.toFixed(1)} km</span> away
+        </p>
+        <span className="inline-block mt-3 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full capitalize">
+          {p.type}
+        </span>
+      </div>
+      <div className="mt-5">
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&origin=${
+            userLocation ? `${userLocation.lat},${userLocation.lng}` : ""
+          }&destination=${p.lat},${p.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center px-4 py-2 w-full rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white text-sm font-medium shadow hover:from-red-700 hover:to-red-600 transition"
+        >
+          🚀 Get Directions
+        </a>
+      </div>
+    </motion.div>
+  );
+});
 
 export default function Hospital() {
   const { t } = useContext(LanguageContext);
@@ -147,81 +165,56 @@ export default function Hospital() {
   const [search, setSearch] = useState("");
   const [maxDistance, setMaxDistance] = useState(10);
   const [category, setCategory] = useState("all");
-
   const mapRef = useRef(null);
-  const debouncedSearch = useDebounce(search, 400);
+  const debouncedSearch = useDebounce(search);
 
-  /* ✅ Get User Location (with permission handling) */
+  /* ✅ Get User Location */
   useEffect(() => {
     async function getLocation() {
       if (!navigator.geolocation) {
-        console.warn("Geolocation not supported");
         setUserLocation({ lat: 28.6139, lng: 77.209 });
         return;
       }
 
       try {
-        const permission = await navigator.permissions?.query({
-          name: "geolocation",
-        });
-
+        const permission = await navigator.permissions?.query({ name: "geolocation" });
         if (permission?.state === "denied") {
-          alert(
-            "⚠️ Location permission is blocked. Please enable it in your browser settings for better results."
-          );
+          alert("⚠️ Location permission is blocked. Please enable it in your browser settings.");
           setUserLocation({ lat: 28.6139, lng: 77.209 });
           return;
         }
 
         navigator.geolocation.getCurrentPosition(
-          (pos) =>
-            setUserLocation({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            }),
-          (err) => {
-            console.error("Location error:", err.message);
-            alert(
-              "⚠️ Could not get live location — using fallback city (Delhi). Please allow location."
-            );
-            setUserLocation({ lat: 28.6139, lng: 77.209 });
-          },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => setUserLocation({ lat: 28.6139, lng: 77.209 }),
+          { enableHighAccuracy: true, timeout: 8000 }
         );
-      } catch (err) {
-        console.error("Location permission check failed", err);
+      } catch {
         setUserLocation({ lat: 28.6139, lng: 77.209 });
       }
     }
-
     getLocation();
   }, []);
 
-  /* ✅ Fetch Hospitals from Overpass API */
+  /* ✅ Fetch Hospitals */
   const fetchHospitals = useCallback(async () => {
     if (!userLocation) return;
     setLoading(true);
-
     try {
       const res = await fetch("https://overpass-api.de/api/interpreter", {
         method: "POST",
-        body: buildOverpassQuery(userLocation.lat, userLocation.lng, 20000),
+        body: buildOverpassQuery(userLocation.lat, userLocation.lng),
       });
-
-      if (!res.ok) throw new Error("Overpass API failed");
       const data = await res.json();
-
       const mapped = data.elements
         .map((el) => {
           const lat = el.lat || el.center?.lat;
           const lng = el.lon || el.center?.lon;
           if (!lat || !lng) return null;
-
           return {
             id: el.id,
             name: el.tags?.name || "Unnamed Medical Facility",
-            type:
-              el.tags?.amenity || el.tags?.healthcare || el.tags?.education || "medical",
+            type: el.tags?.amenity || el.tags?.healthcare || "medical",
             lat,
             lng,
             address: el.tags?.["addr:street"] || "No address available",
@@ -229,28 +222,23 @@ export default function Hospital() {
           };
         })
         .filter(Boolean);
-
-      const unique = Array.from(new Map(mapped.map((p) => [p.id, p])).values());
-      setPlaces(unique);
-    } catch (e) {
-      console.error("Overpass fetch failed:", e.message);
+      setPlaces(Array.from(new Map(mapped.map((p) => [p.id, p])).values()));
+    } catch {
+      console.error("Failed to load Overpass data");
     } finally {
       setLoading(false);
     }
   }, [userLocation]);
 
-  useEffect(() => {
-    fetchHospitals();
-  }, [fetchHospitals]);
+  useEffect(() => { fetchHospitals(); }, [fetchHospitals]);
 
-  /* ✅ Filter & Sort Results */
+  /* ✅ Filter & Sort */
   useEffect(() => {
     let result = places.filter(
       (p) =>
         p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) &&
         p.distance <= maxDistance &&
-        (category === "all" ||
-          p.type.toLowerCase() === category.toLowerCase())
+        (category === "all" || p.type.toLowerCase() === category.toLowerCase())
     );
     result.sort((a, b) => a.distance - b.distance);
     setFilteredPlaces(result);
@@ -296,30 +284,22 @@ export default function Hospital() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {[
-            "all",
-            "hospital",
-            "clinic",
-            "pharmacy",
-            "doctors",
-            "dentist",
-            "blood_bank",
-            "laboratory",
-            "medical_college",
-          ].map((c) => (
-            <motion.button
-              key={c}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setCategory(c)}
-              className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm ${
-                category === c
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-blue-50"
-              }`}
-            >
-              {c.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-            </motion.button>
-          ))}
+          {["all", "hospital", "clinic", "pharmacy", "doctors", "dentist", "blood_bank", "laboratory"].map(
+            (c) => (
+              <motion.button
+                key={c}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setCategory(c)}
+                className={`px-4 py-2 rounded-full text-sm font-medium shadow-sm ${
+                  category === c
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-blue-50"
+                }`}
+              >
+                {c.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+              </motion.button>
+            )
+          )}
         </div>
       </div>
 
@@ -337,11 +317,7 @@ export default function Hospital() {
             <Popup>📍 You are here</Popup>
           </Marker>
           {filteredPlaces.map((p) => (
-            <Marker
-              key={p.id}
-              position={{ lat: p.lat, lng: p.lng }}
-              icon={getIcon(p.type)}
-            >
+            <Marker key={p.id} position={{ lat: p.lat, lng: p.lng }} icon={getIcon(p.type)}>
               <Popup>
                 <h2 className="font-semibold">{p.name}</h2>
                 <p>{p.address}</p>
@@ -354,45 +330,13 @@ export default function Hospital() {
 
       {/* Cards */}
       <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredPlaces.map((p, idx) => (
-          <motion.div
+        {filteredPlaces.map((p) => (
+          <HospitalCard
             key={p.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            whileHover={{ scale: 1.04 }}
-            className="p-6 bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-xl transition flex flex-col justify-between cursor-pointer"
-            onClick={() => {
-              mapRef.current?.setView([p.lat, p.lng], 15, { animate: true });
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          >
-            <div>
-              <h2 className="text-lg font-semibold text-blue-700">{p.name}</h2>
-              <p className="text-sm text-gray-700 mt-2 flex items-center gap-1">
-                {p.distance < 2 ? "🚶" : "🚗"}{" "}
-                <span className="font-medium">{p.distance.toFixed(1)} km</span>{" "}
-                away
-              </p>
-              <span className="inline-block mt-3 px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full capitalize">
-                {p.type}
-              </span>
-            </div>
-            <div className="mt-5">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&origin=${
-                  userLocation
-                    ? `${userLocation.lat},${userLocation.lng}`
-                    : ""
-                }&destination=${p.lat},${p.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-4 py-2 w-full rounded-lg bg-gradient-to-r from-red-600 to-red-500 text-white text-sm font-medium shadow hover:from-red-700 hover:to-red-600 transition"
-              >
-                🚀 Get Directions
-              </a>
-            </div>
-          </motion.div>
+            p={p}
+            userLocation={userLocation}
+            onClick={(place) => mapRef.current?.setView([place.lat, place.lng], 15, { animate: true })}
+          />
         ))}
       </div>
     </div>
