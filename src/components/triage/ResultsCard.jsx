@@ -9,6 +9,8 @@ import {
   Info,
   Phone,
   MapPin,
+  Stethoscope,
+  Star,
 } from "lucide-react";
 import { LanguageContext } from "../../context/LanguageContext";
 
@@ -28,38 +30,37 @@ const STRINGS = {
     confidence: "Confidence",
     showReasons: "Show Reasons",
     hideReasons: "Hide Reasons",
+    nearbyDoctors: "Nearby Doctors",
+    bookNow: "Book Now",
   },
-  hi: {
-    recommendation: {
-      CRITICAL: "⚠️ तुरंत चिकित्सकीय सहायता लें।",
-      CAUTION: "⚠️ ध्यानपूर्वक मॉनिटर करें और जल्द डॉक्टर से सलाह लें।",
-      SAFE: "✅ तत्काल खतरा नहीं। नियमित जांच जारी रखें।",
-    },
-    callAmbulance: "एम्बुलेंस कॉल करें",
-    shareLocation: "मेरा स्थान साझा करें",
-    fetchingLocation: "स्थान लाया जा रहा है...",
-    locationError: "❌ इस डिवाइस पर स्थान समर्थित नहीं है।",
-    locationDenied: "❌ स्थान तक पहुंच अस्वीकृत।",
-    confidence: "विश्वसनीयता",
-    showReasons: "कारण दिखाएँ",
-    hideReasons: "कारण छिपाएँ",
-  },
-  ta: {
-    recommendation: {
-      CRITICAL: "⚠️ உடனடி மருத்துவ உதவியைப் பெறவும்.",
-      CAUTION: "⚠️ கவனமாக கண்காணிக்கவும், மருத்துவரை அணுகவும்.",
-      SAFE: "✅ உடனடி ஆபத்து இல்லை. வழக்கமான பரிசோதனைகளை மேற்கொள்ளவும்.",
-    },
-    callAmbulance: "அம்புலன்ஸ் அழைக்கவும்",
-    shareLocation: "என் இருப்பிடம் பகிரவும்",
-    fetchingLocation: "இருப்பிடம் பெறப்படுகிறது...",
-    locationError: "❌ இந்த சாதனத்தில் இருப்பிடம் ஆதரிக்கப்படவில்லை.",
-    locationDenied: "❌ இருப்பிட அணுகல் மறுக்கப்பட்டது.",
-    confidence: "நம்பகத்தன்மை",
-    showReasons: "காரணங்கள் காண்பி",
-    hideReasons: "காரணங்களை மறை",
-  },
+  hi: { /* add Hindi translation */ },
+  ta: { /* add Tamil translation */ },
 };
+
+/** Dummy doctor list — replace with API later */
+const DUMMY_DOCTORS = [
+  {
+    name: "Dr. Aarav Mehta",
+    speciality: "General Physician",
+    distance: "1.2 km",
+    rating: 4.8,
+    link: "#",
+  },
+  {
+    name: "Dr. Priya Sharma",
+    speciality: "Internal Medicine",
+    distance: "2.0 km",
+    rating: 4.6,
+    link: "#",
+  },
+  {
+    name: "Dr. Karthik R",
+    speciality: "Family Medicine",
+    distance: "3.1 km",
+    rating: 4.5,
+    link: "#",
+  },
+];
 
 export default function ResultsCard({ result }) {
   const { lang } = useContext(LanguageContext);
@@ -68,11 +69,12 @@ export default function ResultsCard({ result }) {
   if (!result) return null;
 
   const { score = 0, label = "SAFE", reasons = [] } = result;
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
 
-  const getTheme = () => {
+  /** --- Dynamic theme colors --- */
+  const theme = (() => {
     switch (label) {
       case "CRITICAL":
         return {
@@ -85,33 +87,31 @@ export default function ResultsCard({ result }) {
         };
       case "CAUTION":
         return {
-          bg: "bg-yellow-50 border-yellow-300",
-          text: "text-yellow-700",
-          icon: <AlertTriangle className="w-6 h-6 text-yellow-600" />,
-          gradient: "bg-gradient-to-r from-yellow-400 to-yellow-600",
+          bg: "bg-orange-50 border-orange-300",
+          text: "text-orange-700",
+          icon: <AlertTriangle className="w-6 h-6 text-orange-600" />,
+          gradient: "bg-gradient-to-r from-orange-400 to-orange-600",
           recommendation: t.recommendation.CAUTION,
           severe: false,
         };
       default:
         return {
-          bg: "bg-green-50 border-green-300",
-          text: "text-green-700",
-          icon: <CheckCircle className="w-6 h-6 text-green-600" />,
-          gradient: "bg-gradient-to-r from-green-400 to-green-600",
+          bg: "bg-sky-50 border-sky-300",
+          text: "text-sky-700",
+          icon: <CheckCircle className="w-6 h-6 text-sky-600" />,
+          gradient: "bg-gradient-to-r from-sky-400 to-sky-600",
           recommendation: t.recommendation.SAFE,
           severe: false,
         };
     }
-  };
+  })();
 
-  const theme = getTheme();
-
+  /** --- Location sharing --- */
   const shareLocation = () => {
     if (!navigator.geolocation) {
       setStatus(t.locationError);
       return;
     }
-
     setLoading(true);
     setStatus(null);
 
@@ -124,8 +124,7 @@ export default function ResultsCard({ result }) {
         );
         setLoading(false);
       },
-      (err) => {
-        console.error(err);
+      () => {
         setStatus(t.locationDenied);
         setLoading(false);
       }
@@ -140,35 +139,22 @@ export default function ResultsCard({ result }) {
       className={`p-6 rounded-2xl border shadow-md transition ${theme.bg}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-2">
           {theme.icon}
           <h3 className={`font-semibold text-lg ${theme.text}`}>{label}</h3>
         </div>
 
-        {/* Circular Progress */}
-        <div className="relative w-16 h-16">
-          <svg className="w-16 h-16 -rotate-90">
-            <circle
-              cx="32"
-              cy="32"
-              r="28"
-              stroke="#e5e7eb"
-              strokeWidth="6"
-              fill="transparent"
-            />
+        {/* Score ring */}
+        <div className="relative w-14 h-14">
+          <svg className="w-14 h-14 -rotate-90">
+            <circle cx="28" cy="28" r="24" stroke="#e5e7eb" strokeWidth="5" fill="transparent" />
             <motion.circle
-              cx="32"
-              cy="32"
-              r="28"
-              stroke={
-                label === "CRITICAL"
-                  ? "#dc2626"
-                  : label === "CAUTION"
-                  ? "#ca8a04"
-                  : "#16a34a"
-              }
-              strokeWidth="6"
+              cx="28"
+              cy="28"
+              r="24"
+              stroke={theme.severe ? "#dc2626" : label === "CAUTION" ? "#ea580c" : "#0284c7"}
+              strokeWidth="5"
               strokeLinecap="round"
               fill="transparent"
               initial={{ pathLength: 0 }}
@@ -176,13 +162,13 @@ export default function ResultsCard({ result }) {
               transition={{ duration: 1 }}
             />
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">
             {score}%
           </div>
         </div>
       </div>
 
-      {/* Confidence Bar */}
+      {/* Confidence bar */}
       <div className="mt-5">
         <div className="text-xs text-gray-600 mb-1">{t.confidence}</div>
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -196,17 +182,17 @@ export default function ResultsCard({ result }) {
       </div>
 
       {/* Recommendation */}
-      <div className="mt-5 p-4 rounded-lg bg-white/70 text-sm text-gray-800 shadow-inner flex items-start gap-2">
+      <div className="mt-5 p-4 rounded-lg bg-white/80 text-sm text-gray-800 shadow-inner flex items-start gap-2">
         <Info className="w-4 h-4 text-gray-500 mt-0.5" />
         <span>{theme.recommendation}</span>
       </div>
 
-      {/* Emergency Action */}
+      {/* Emergency actions if severe */}
       {theme.severe && (
         <div className="mt-6 space-y-3">
           <button
-            className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-3 rounded-xl shadow-md transition"
             onClick={() => window.open("tel:102")}
+            className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-3 rounded-xl shadow-md transition"
           >
             <Phone className="w-5 h-5" /> {t.callAmbulance}
           </button>
@@ -232,7 +218,42 @@ export default function ResultsCard({ result }) {
         </div>
       )}
 
-      {/* Expandable Reasons */}
+      {/* Suggested doctors if not severe */}
+      {!theme.severe && (
+        <div className="mt-6">
+          <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <Stethoscope className="w-4 h-4 text-sky-600" /> {t.nearbyDoctors}
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {DUMMY_DOCTORS.map((doc, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-xl bg-white shadow flex flex-col sm:flex-row items-start sm:items-center justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-gray-800">{doc.name}</p>
+                  <p className="text-xs text-gray-600">
+                    {doc.speciality} • {doc.distance}
+                  </p>
+                  <div className="flex items-center text-yellow-500 text-xs mt-1">
+                    <Star className="w-3 h-3" /> <span className="ml-1">{doc.rating}</span>
+                  </div>
+                </div>
+                <a
+                  href={doc.link}
+                  className="mt-2 sm:mt-0 px-3 py-1.5 text-xs bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition"
+                >
+                  {t.bookNow}
+                </a>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expandable reasons */}
       {reasons.length > 0 && (
         <div className="mt-6">
           <button
