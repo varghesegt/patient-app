@@ -1,15 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   AlertTriangle,
-  PhoneCall,
-  Shield,
-  MapPin,
   Loader2,
   CheckCircle2,
   X,
   WifiOff,
   Wifi,
-  History,
   KeyRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,12 +32,8 @@ export default function Emergency() {
   const [enteredOtp, setEnteredOtp] = useState("");
   const [selectedType, setSelectedType] = useState(null);
   const [useLiveLoc, setUseLiveLoc] = useState(true);
-  const [crashDetectionEnabled, setCrashDetectionEnabled] = useState(false);
-  const [crashDetected, setCrashDetected] = useState(false);
   const [crashCountdownMs, setCrashCountdownMs] = useState(10000); 
-  const crashTimerRef = useRef(null);
-  const countdownIntervalRef = useRef(null);
-  const crashTimeoutRef = useRef(null);
+
   const emergencyTypesRef = useRef([
     { id: "accident", label: "Accident" },
     { id: "stroke", label: "Stroke" },
@@ -50,9 +42,6 @@ export default function Emergency() {
     { id: "other", label: "Other" },
   ]);
 
-  const IMPACT_THRESHOLD = 35;
-  const CRASH_COUNTDOWN_MS = crashCountdownMs; 
-  const DEVICE_MOTION_POLL_INTERVAL = 250; 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -272,132 +261,6 @@ export default function Emergency() {
     );
   };
 
-  const requestMotionPermission = async () => {
-    try {
-      if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
-        const perm = await DeviceMotionEvent.requestPermission(); 
-        if (perm === "granted") {
-          console.log("DeviceMotion permission granted");
-          return true;
-        } else {
-          console.warn("DeviceMotion permission denied");
-          return false;
-        }
-      }
-      return true;
-    } catch (err) {
-      console.warn("Motion permission request failed:", err);
-      return false;
-    }
-  };
-
-  useEffect(() => {
-    let lastSampleTime = 0;
-    let lastAccel = { x: 0, y: 0, z: 0 };
-
-    const handleMotion = (event) => {
-      const now = Date.now();
-      if (now - lastSampleTime < DEVICE_MOTION_POLL_INTERVAL) return;
-      lastSampleTime = now;
-
-      const acc = event.accelerationIncludingGravity;
-      if (!acc) return;
-
-      const ax = acc.x || 0;
-      const ay = acc.y || 0;
-      const az = acc.z || 0;
-      const magnitude = Math.sqrt(ax * ax + ay * ay + az * az);
-      if (magnitude > IMPACT_THRESHOLD && !crashDetected) {
-        console.log("Impact detected, magnitude:", magnitude);
-        triggerCrashDetected();
-      }
-
-      lastAccel = { x: ax, y: ay, z: az };
-    };
-
-    if (crashDetectionEnabled) {
-      window.addEventListener("devicemotion", handleMotion);
-    }
-
-    return () => {
-      window.removeEventListener("devicemotion", handleMotion);
-      clearCrashTimers();
-    };
-  }, [crashDetectionEnabled, crashDetected]);
-  const clearCrashTimers = () => {
-    if (crashTimerRef.current) {
-      clearTimeout(crashTimerRef.current);
-      crashTimerRef.current = null;
-    }
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = null;
-    }
-    if (crashTimeoutRef.current) {
-      clearTimeout(crashTimeoutRef.current);
-      crashTimeoutRef.current = null;
-    }
-  };
-
-  const triggerCrashDetected = () => {
-    setCrashDetected(true);
-    vibrateSupported && navigator.vibrate([300, 100, 300]);
-    let remaining = CRASH_COUNTDOWN_MS;
-    const intervalMs = 250;
-    const startedAt = Date.now();
-
-    countdownIntervalRef.current = setInterval(() => {
-      remaining = CRASH_COUNTDOWN_MS - (Date.now() - startedAt);
-      if (remaining <= 0) {
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-      }
-      setCrashCountdownMs(Math.max(0, remaining));
-    }, intervalMs);
-
-    crashTimerRef.current = setTimeout(async () => {
-      try {
-        await handleSOS(true, "accident");
-      } catch (e) {
-        console.error("Auto SOS failed:", e);
-      } finally {
-        setCrashDetected(false);
-        setCrashCountdownMs(CRASH_COUNTDOWN_MS); 
-        clearCrashTimers();
-      }
-    }, CRASH_COUNTDOWN_MS);
-
-    crashTimeoutRef.current = setTimeout(() => {
-      setCrashDetected(false);
-      setCrashCountdownMs(CRASH_COUNTDOWN_MS);
-      clearCrashTimers();
-    }, CRASH_COUNTDOWN_MS + 15000);
-  };
-
-  const cancelCrashDetection = () => {
-    clearCrashTimers();
-    setCrashDetected(false);
-    setCrashCountdownMs(CRASH_COUNTDOWN_MS);
-    vibrateSupported && navigator.vibrate([100, 50]);
-  };
-
-  const toggleCrashDetection = async (enable) => {
-    if (enable) {
-      const permissionOk = await requestMotionPermission();
-      if (!permissionOk) {
-        alert(
-          "Motion access denied. For crash detection to work you must grant Device Motion permission in your browser."
-        );
-        setCrashDetectionEnabled(false);
-        return;
-      }
-      setCrashDetectionEnabled(true);
-    } else {
-      setCrashDetectionEnabled(false);
-      clearCrashTimers();
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6 sm:p-10 relative overflow-hidden">
       {/* Glowing Background */}
@@ -478,61 +341,7 @@ export default function Emergency() {
               <p className="text-sm text-green-600 dark:text-green-400 font-semibold">SOS triggered ✅</p>
             )}
           </div>
-
-          {/* Crash detection toggle + status */}
-          <div className="mt-6 flex items-center justify-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={crashDetectionEnabled}
-                onChange={(e) => toggleCrashDetection(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm text-gray-600">Enable Crash Detection (Demo)</span>
-            </label>
-            {crashDetectionEnabled && (
-              <span className="text-xs text-green-600">Monitoring sensors…</span>
-            )}
-            {!crashDetectionEnabled && (
-              <span className="text-xs text-gray-500">Not monitoring</span>
-            )}
-          </div>
         </motion.div>
-
-        {/* Crash detected modal */}
-        <AnimatePresence>
-          {crashDetected && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-xl w-full max-w-md text-center"
-              >
-                <AlertTriangle className="mx-auto text-red-600 mb-3" size={48} />
-                <h3 className="text-xl font-bold mb-2">Possible Crash Detected</h3>
-                <p className="text-gray-600 mb-3">
-                  We detected a sudden impact. An SOS will be sent automatically in{" "}
-                  <strong>{Math.ceil(crashCountdownMs / 1000)}</strong> seconds unless cancelled.
-                </p>
-                <div className="flex justify-center gap-3">
-                  <button
-                    onClick={cancelCrashDetection}
-                    className="px-4 py-2 bg-gray-200 rounded-lg"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence>
           {modalOpen && (
             <motion.div
@@ -818,122 +627,10 @@ export default function Emergency() {
             ) : (
               <p className="text-sm text-gray-500 mt-2">No pending items</p>
             )}
-            <div className="mt-3 flex gap-2">
-              <button
-                onClick={flushQueue}
-                className="px-3 py-2 bg-green-600 text-white rounded"
-              >
-                Try Send Now
-              </button>
-              <button
-                onClick={clearQueue}
-                className="px-3 py-2 bg-gray-200 rounded"
-              >
-                Clear Queue
-              </button>
-            </div>
+
           </div>
         </motion.div>
 
-        {/*History*/}
-        {history.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="mt-8 bg-white/80 dark:bg-gray-800/70 p-5 rounded-xl shadow-md"
-          >
-            <h4 className="flex items-center gap-2 font-semibold mb-3">
-              <History size={18} /> Last SOS Requests
-            </h4>
-            <ul className="space-y-2 text-sm">
-              {history.map((h, i) => (
-                <li
-                  key={i}
-                  className="flex justify-between border-b pb-1 text-gray-600 dark:text-gray-300"
-                >
-                  <span>
-                    {new Date(h.timestamp).toLocaleString()} - {h.status} -{" "}
-                    {h.type?.toUpperCase()}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={`https://maps.google.com/?q=${h.lat},${h.lng}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      View Map
-                    </a>
-                    <button
-                      onClick={() => clearHistoryItem(i)}
-                      className="text-xs text-red-500"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-
-        {/*Additional Options*/}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="mt-10 grid gap-6 sm:grid-cols-2"
-        >
-          {[
-            {
-              icon: PhoneCall,
-              title: "Direct Helpline",
-              desc: "Instantly dial 112 or your nearest emergency number.",
-              color: "text-blue-500",
-              action: () => (window.location.href = "tel:112"),
-            },
-            {
-              icon: Shield,
-              title: "Safety Tips",
-              desc: "Stay calm, secure your surroundings, and follow steps.",
-              color: "text-green-500",
-            },
-            {
-              icon: MapPin,
-              title: "Share Location",
-              desc: "Share your current map link with a contact.",
-              color: "text-purple-500",
-              action: () =>
-                navigator.share &&
-                navigator.share({
-                  title: "My Location",
-                  text: `I'm here: ${window.location.href}`,
-                }),
-            },
-            {
-              icon: AlertTriangle,
-              title: "Critical Alerts",
-              desc: "Get notified of nearby incidents or hazards.",
-              color: "text-orange-500",
-            },
-          ].map((card, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.05 }}
-              onClick={card.action}
-              className="bg-white/90 dark:bg-gray-800/90 p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer flex flex-col gap-2"
-            >
-              <div className="flex items-center gap-3">
-                <card.icon className={`${card.color}`} size={24} />
-                <h4 className="font-semibold text-gray-800 dark:text-gray-200">
-                  {card.title}
-                </h4>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{card.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
       </div>
     </div>
   );
