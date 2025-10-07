@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useContext } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
@@ -15,7 +15,6 @@ import {
   Stethoscope,
   Pill,
   FileBarChart,
-  User,
   Download,
   HeartPulse,
   Thermometer,
@@ -23,20 +22,17 @@ import {
   Watch,
   Search,
   ChevronRight,
-  Link2,
   Bell,
   UploadCloud,
   Upload,
   Shield,
-  Wallet,
-  CreditCard,
   ClipboardList,
   CalendarClock,
   Lock,
-  Unlock
+  Unlock,
 } from "lucide-react";
-import { LanguageContext } from "../context/LanguageContext";
 
+/** Minimal i18n (single language) */
 const STRINGS = {
   en: {
     tabs: {
@@ -45,8 +41,6 @@ const STRINGS = {
       vitals: "Vitals",
       visits: "Visits",
       reports: "Reports",
-      tasks: "Tasks",
-      insurance: "Insurance",
     },
     contactInfo: "Contact Info",
     bmi: "BMI",
@@ -69,50 +63,25 @@ const STRINGS = {
       reportUrl: "Report link (pdf/image)",
       visitDoctor: "Doctor / Dept.",
       visitNotes: "Notes / follow-up",
-      taskTitle: "Add task (e.g., Book eye test)",
-      insurer: "Insurer",
-      policy: "Policy #",
     },
     edit: "Edit",
     save: "Save",
     exportPdf: "Export PDF",
     exportJson: "Backup JSON",
     importJson: "Restore JSON",
-    connectDevice: "Connect Device",
     notifications: "Reminders",
-    enable: "Enable",
-    disable: "Disable",
     patientID: "Patient ID: #MEDI12345",
-    age: "Age",
-    gender: "Gender",
-    male: "Male",
-    female: "Female",
-    other: "Other",
     vitalsNow: "Live vitals (simulated)",
-    today: "Today",
-    markTaken: "Taken",
-    notTaken: "Not taken",
     add: "Add",
-    remove: "Remove",
-    searchReports: "Search reports...",
     view: "View",
     upload: "Upload",
     emergencyContacts: "Emergency Contacts",
-    addContact: "Add contact",
-    name: "Name",
-    relation: "Relation",
-    phone: "Phone",
-    privacy: "Privacy",
     lock: "Lock",
     unlock: "Unlock",
     visitsHdr: "Visits & Notes",
     addVisit: "Add visit",
-    doctor: "Doctor",
-    notes: "Notes",
     noData: "No data yet",
-    audit: "Audit Log",
-    upcoming: "Upcoming",
-    due: "Due",
+    searchReports: "Search reports...",
     coverage: "Coverage",
     balance: "Balance",
   },
@@ -129,7 +98,9 @@ const useLocal = (key, initial) => {
     }
   });
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch {}
   }, [key, val]);
   return [val, setVal];
 };
@@ -152,8 +123,7 @@ const tone = (ok) => (ok ? "text-emerald-600" : "text-rose-600");
 
 // ---- component -------------------------------------------------------------
 export default function PatientDashboard() {
-  const { lang } = useContext(LanguageContext);
-  const t = STRINGS[lang] || STRINGS.en;
+  const t = STRINGS.en;
 
   const [tab, setTab] = useState("overview");
   const [editMode, setEditMode] = useState(false);
@@ -186,16 +156,12 @@ export default function PatientDashboard() {
     visits: [
       { date: "2025-06-05", doctor: "Dr. Rao (Cardiology)", notes: "Routine review; continue meds" },
     ],
-    contacts: [ { name: "Parent", relation: "Father", phone: "+91 98xxxxxx01" } ],
-    insurance: { insurer: "ACME Health", policy: "POL1234567", coverage: 300000, balance: 42500 },
-    tasks: [
-      { title: "Book eye test", done: false },
-      { title: "Renew insurance KYC", done: true },
-    ],
+    contacts: [{ name: "Parent", relation: "Father", phone: "+91 98xxxxxx01" }],
     avatar: null,
   });
 
-  const log = (msg) => setAudit((a) => [{ ts: new Date().toISOString(), msg }, ...a].slice(0, 80));
+  const log = (msg) =>
+    setAudit((a) => [{ ts: new Date().toISOString(), msg }, ...a].slice(0, 80));
   const mask = (s) => (locked ? s.replace(/.(?=.{4})/g, "•") : s);
 
   // --- strings & inputs ---
@@ -253,7 +219,9 @@ export default function PatientDashboard() {
         sys: Math.max(90, Math.min(150, Math.round(b.sys + (Math.random() - 0.5) * 3))),
         dia: Math.max(50, Math.min(95, Math.round(b.dia + (Math.random() - 0.5) * 2))),
       }));
-      setTemp((t) => Math.max(35.5, Math.min(39.5, +(t + (Math.random() - 0.5) * 0.05).toFixed(2))));
+      setTemp((t) =>
+        Math.max(35.5, Math.min(39.5, +(t + (Math.random() - 0.5) * 0.05).toFixed(2)))
+      );
       setHrSeries((s) => [...s.slice(-24), hr]);
       setSpo2Series((s) => [...s.slice(-24), spo2]);
     }, 1500);
@@ -297,40 +265,57 @@ export default function PatientDashboard() {
   // --- print to PDF ---
   const printableRef = useRef(null);
   const exportPDF = () => {
-    const css = `@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}.print-container{padding:16px}.card{break-inside:avoid}}`;
+    const css =
+      "@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none!important}.print-container{padding:16px}.card{break-inside:avoid}}";
     const win = window.open("", "_blank", "noopener,noreferrer");
     if (!win) return;
     const doc = win.document;
-    doc.write(`<!doctype html><html><head><title>Patient Dashboard</title><meta charset='utf-8'/><style>${css}</style></head><body class='print-container' style="font-family: system-ui, Inter, Roboto">${printableRef.current?.innerHTML || ""}</body></html>`);
-    doc.close(); win.focus(); win.print();
+    doc.write(
+      `<!doctype html><html><head><title>Patient Dashboard</title><meta charset='utf-8'/><style>${css}</style></head><body class='print-container' style="font-family: system-ui, Inter, Roboto">${printableRef.current?.innerHTML || ""}</body></html>`
+    );
+    doc.close();
+    win.focus();
+    win.print();
     log("Exported PDF");
   };
 
-  // --- JSON backup/restore ---
+  // --- JSON backup/restore (restored) ---
   const downloadJSON = () => {
-    const blob = new Blob([JSON.stringify({ profile, audit }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ profile, audit }, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `patient_dashboard_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `patient_dashboard_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
     log("Backup JSON downloaded");
   };
   const uploadJSON = (e) => {
-    const f = e.target.files?.[0]; if (!f) return;
+    const f = e.target.files?.[0];
+    if (!f) return;
     const r = new FileReader();
-    r.onload = () => { try { const d = JSON.parse(r.result); if (d.profile) setProfile(d.profile); if (d.audit) setAudit(d.audit); log("Profile restored from JSON"); } catch { alert("Invalid JSON"); } };
-    r.readAsText(f); e.target.value = "";
-  };
-
-  // --- avatar upload ---
-  const onAvatar = (e) => {
-    const file = e.target.files?.[0]; if (!file) return;
-    const reader = new FileReader(); reader.onloadend = () => setProfile({ ...profile, avatar: reader.result });
-    reader.readAsDataURL(file); log("Avatar updated");
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (d.profile) setProfile(d.profile);
+        if (d.audit) setAudit(d.audit);
+        log("Profile restored from JSON");
+      } catch {
+        alert("Invalid JSON");
+      }
+    };
+    r.readAsText(f);
+    e.target.value = "";
   };
 
   // --- reports filter ---
   const filteredReports = useMemo(() => {
     const q = reportQuery.toLowerCase();
-    return profile.labReports.filter((r) => (r.title + (r.date || "")).toLowerCase().includes(q));
+    return profile.labReports.filter((r) =>
+      (r.title + (r.date || "")).toLowerCase().includes(q)
+    );
   }, [profile.labReports, reportQuery]);
 
   const addReport = () => {
@@ -340,7 +325,8 @@ export default function PatientDashboard() {
     log("Report added");
   };
   const onReportFile = (e) => {
-    const f = e.target.files?.[0]; if (!f) return;
+    const f = e.target.files?.[0];
+    if (!f) return;
     const reader = new FileReader();
     reader.onloadend = () => setNewReport((nr) => ({ ...nr, fileDataUrl: reader.result }));
     if (f.type.startsWith("image/")) reader.readAsDataURL(f);
@@ -348,7 +334,11 @@ export default function PatientDashboard() {
   };
 
   // --- small helpers ---
-  const cardVariant = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -15 } };
+  const cardVariant = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -15 },
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -357,9 +347,21 @@ export default function PatientDashboard() {
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <img src={profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=E5F4FF&color=0ea5e9&size=128`} alt="avatar" className="w-10 h-10 rounded-full border"/>
+              <img
+                src={
+                  profile.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    profile.name
+                  )}&background=E5F4FF&color=0ea5e9&size=128`
+                }
+                alt="avatar"
+                className="w-10 h-10 rounded-full border"
+              />
               {editMode && (
-                <label className="absolute -bottom-1 -right-1 bg-sky-500 p-1 rounded-full cursor-pointer"><Camera size={12} className="text-white"/><input className="hidden" type="file" accept="image/*" onChange={onAvatar}/></label>
+                <label className="absolute -bottom-1 -right-1 bg-sky-500 p-1 rounded-full cursor-pointer">
+                  <Camera size={12} className="text-white" />
+                  <input className="hidden" type="file" accept="image/*" onChange={onAvatar} />
+                </label>
               )}
             </div>
             <div>
@@ -369,11 +371,43 @@ export default function PatientDashboard() {
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            <button onClick={exportPDF} className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50"><Download size={16}/> {t.exportPdf}</button>
-            <button onClick={downloadJSON} className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50"><UploadCloud size={16}/> {t.exportJson}</button>
-            <label className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer"><Upload size={16}/> {t.importJson}<input type="file" accept="application/json" className="hidden" onChange={uploadJSON}/></label>
-            <button onClick={() => setLocked(!locked)} className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50">{locked ? <Lock size={16}/> : <Unlock size={16}/>}{locked ? t.lock : t.unlock}</button>
-            <button onClick={editMode ? () => { setEditMode(false); saveProfile(); } : () => setEditMode(true)} className="inline-flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600">{editMode ? <Save size={16}/> : <Edit2 size={16}/>}{editMode ? t.save : t.edit}</button>
+            <button
+              onClick={exportPDF}
+              className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50"
+            >
+              <Download size={16} /> {t.exportPdf}
+            </button>
+            <button
+              onClick={downloadJSON}
+              className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50"
+            >
+              <UploadCloud size={16} /> {t.exportJson}
+            </button>
+            <label className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer">
+              <Upload size={16} /> {t.importJson}
+              <input type="file" accept="application/json" className="hidden" onChange={uploadJSON} />
+            </label>
+            <button
+              onClick={() => setLocked(!locked)}
+              className="inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50"
+            >
+              {locked ? <Lock size={16} /> : <Unlock size={16} />}
+              {locked ? t.lock : t.unlock}
+            </button>
+            <button
+              onClick={
+                editMode
+                  ? () => {
+                      setEditMode(false);
+                      saveProfile();
+                    }
+                  : () => setEditMode(true)
+              }
+              className="inline-flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-md hover:bg-sky-600"
+            >
+              {editMode ? <Save size={16} /> : <Edit2 size={16} />}
+              {editMode ? t.save : "Edit"}
+            </button>
           </div>
         </div>
       </div>
@@ -383,7 +417,15 @@ export default function PatientDashboard() {
         {/* Sidebar (desktop) */}
         <div className="hidden md:block bg-white rounded-xl border shadow-sm p-2 h-fit sticky top-16">
           {Object.keys(t.tabs).map((key) => (
-            <button key={key} onClick={() => setTab(key)} className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 ${tab===key?"bg-sky-50 text-sky-700 font-medium":"hover:bg-gray-50 text-gray-700"}`}>{t.tabs[key]}</button>
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 ${
+                tab === key ? "bg-sky-50 text-sky-700 font-medium" : "hover:bg-gray-50 text-gray-700"
+              }`}
+            >
+              {t.tabs[key]}
+            </button>
           ))}
         </div>
 
@@ -392,46 +434,121 @@ export default function PatientDashboard() {
           <AnimatePresence mode="wait">
             {/* OVERVIEW */}
             {tab === "overview" && (
-              <motion.div key="overview" variants={cardVariant} initial="hidden" animate="visible" exit="exit" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <motion.div
+                key="overview"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+              >
                 {/* Contact & metrics */}
                 <div className="bg-white rounded-xl border shadow-sm p-4 space-y-3 lg:col-span-2">
-                  <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Watch size={16} className="text-sky-500"/>{t.contactInfo}</h3>
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Watch size={16} className="text-sky-500" />
+                    {t.contactInfo}
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-2"><Phone size={16} className="text-sky-500"/>{editMode ? <input name="phone" value={profile.phone} onChange={handleChange} className="border p-2 rounded w-full text-sm"/> : <span className="text-sm">{mask(profile.phone)}</span>}</div>
-                    <div className="flex items-center gap-2"><Mail size={16} className="text-sky-500"/>{editMode ? <input name="email" value={profile.email} onChange={handleChange} className="border p-2 rounded w-full text-sm"/> : <span className="text-sm">{mask(profile.email)}</span>}</div>
+                    <div className="flex items-center gap-2">
+                      <Phone size={16} className="text-sky-500" />
+                      {editMode ? (
+                        <input
+                          name="phone"
+                          value={profile.phone}
+                          onChange={handleChange}
+                          className="border p-2 rounded w-full text-sm"
+                        />
+                      ) : (
+                        <span className="text-sm">{mask(profile.phone)}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail size={16} className="text-sky-500" />
+                      {editMode ? (
+                        <input
+                          name="email"
+                          value={profile.email}
+                          onChange={handleChange}
+                          className="border p-2 rounded w-full text-sm"
+                        />
+                      ) : (
+                        <span className="text-sm">{mask(profile.email)}</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <Activity className="text-sky-500 mx-auto" size={18}/>
+                      <Activity className="text-sky-500 mx-auto" size={18} />
                       <div className="text-xs text-gray-500">{t.bmi}</div>
                       <div className="text-xl font-semibold">{profile.bmi}</div>
-                      <div className={`text-[11px] ${tone(profile.bmi>=18.5 && profile.bmi<25)}`}>{profile.bmi<18.5?"Under":profile.bmi<25?"Normal":profile.bmi<30?"Over":"Obese"}</div>
+                      <div
+                        className={`text-[11px] ${
+                          tone(profile.bmi >= 18.5 && profile.bmi < 25)
+                        }`}
+                      >
+                        {profile.bmi < 18.5
+                          ? "Under"
+                          : profile.bmi < 25
+                          ? "Normal"
+                          : profile.bmi < 30
+                          ? "Over"
+                          : "Obese"}
+                      </div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <Calendar className="text-sky-500 mx-auto" size={18}/>
+                      <Calendar className="text-sky-500 mx-auto" size={18} />
                       <div className="text-xs text-gray-500">{t.lastCheckup}</div>
                       <div className="text-sm font-medium">{profile.lastCheckup}</div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <Droplet className="text-red-500 mx-auto" size={18}/>
+                      <Droplet className="text-red-500 mx-auto" size={18} />
                       <div className="text-xs text-gray-500">{t.bloodGroup}</div>
                       <div className="text-sm font-medium">{profile.bloodGroup}</div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 text-center">
-                      <Gauge className="text-indigo-500 mx-auto" size={18}/>
-                      <div className="text-xs text-gray-500">{t.height} / {t.weight}</div>
-                      <div className="text-sm font-medium">{profile.heightCm}cm • {profile.weightKg}kg</div>
+                      <Gauge className="text-indigo-500 mx-auto" size={18} />
+                      <div className="text-xs text-gray-500">
+                        {t.height} / {t.weight}
+                      </div>
+                      <div className="text-sm font-medium">
+                        {profile.heightCm}cm • {profile.weightKg}kg
+                      </div>
                     </div>
                   </div>
 
                   {editMode && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <input type="number" name="heightCm" value={profile.heightCm} onChange={handleChange} className="border p-2 rounded text-sm" placeholder={t.height}/>
-                      <input type="number" name="weightKg" value={profile.weightKg} onChange={handleChange} className="border p-2 rounded text-sm" placeholder={t.weight}/>
+                      <input
+                        type="number"
+                        name="heightCm"
+                        value={profile.heightCm}
+                        onChange={handleChange}
+                        className="border p-2 rounded text-sm"
+                        placeholder={t.height}
+                      />
+                      <input
+                        type="number"
+                        name="weightKg"
+                        value={profile.weightKg}
+                        onChange={handleChange}
+                        className="border p-2 rounded text-sm"
+                        placeholder={t.weight}
+                      />
                       <div className="col-span-2 flex items-center gap-2">
-                        <button onClick={askNotif} className="border px-3 py-2 rounded text-sm inline-flex items-center gap-2"><Bell size={14}/> {t.notifications}</button>
-                        <button onClick={()=>setLocked(!locked)} className="border px-3 py-2 rounded text-sm inline-flex items-center gap-2">{locked? <Lock size={14}/> : <Unlock size={14}/>}{locked?t.lock:t.unlock}</button>
+                        <button
+                          onClick={askNotif}
+                          className="border px-3 py-2 rounded text-sm inline-flex items-center gap-2"
+                        >
+                          <Bell size={14} /> {t.notifications}
+                        </button>
+                        <button
+                          onClick={() => setLocked(!locked)}
+                          className="border px-3 py-2 rounded text-sm inline-flex items-center gap-2"
+                        >
+                          {locked ? <Lock size={14} /> : <Unlock size={14} />}
+                          {locked ? t.lock : t.unlock}
+                        </button>
                       </div>
                     </div>
                   )}
@@ -439,41 +556,124 @@ export default function PatientDashboard() {
 
                 {/* Medications quick view */}
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Pill size={16} className="text-green-600"/> {t.medications}</h3>
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Pill size={16} className="text-green-600" /> {t.medications}
+                  </h3>
                   <div className="mt-2 space-y-2">
-                    {profile.medications?.length ? profile.medications.map((m, i) => {
-                      const times = (m.freq||"").split(',').map(s=>s.trim()).filter(Boolean);
-                      return (
-                        <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                          <div>
-                            <p className="font-medium text-gray-800">{m.name} <span className="text-xs text-gray-500">• {m.dose} • {times.join(' ')||"--:--"}</span></p>
-                            <div className="flex gap-2 mt-1 flex-wrap">
-                              {times.map((tstr)=> (
-                                <button key={tstr} onClick={()=>{
-                                  const taken = !!m.takenToday?.[tstr];
-                                  setProfile({...profile, medications: profile.medications.map((x,idx)=> idx===i?{...x, takenToday:{...(x.takenToday||{}), [tstr]:!taken}}:x)});
-                                }} className={`text-[11px] px-2 py-0.5 rounded border ${m.takenToday?.[tstr]?"bg-green-100 border-green-300 text-green-700":"bg-white hover:bg-gray-100"}`}>{tstr} {m.takenToday?.[tstr]?"✓":""}</button>
-                              ))}
+                    {profile.medications?.length ? (
+                      profile.medications.map((m, i) => {
+                        const times = (m.freq || "")
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-800">
+                                {m.name}{" "}
+                                <span className="text-xs text-gray-500">
+                                  • {m.dose} • {times.join(" ") || "--:--"}
+                                </span>
+                              </p>
+                              <div className="flex gap-2 mt-1 flex-wrap">
+                                {times.map((tstr) => (
+                                  <button
+                                    key={tstr}
+                                    onClick={() => {
+                                      const taken = !!m.takenToday?.[tstr];
+                                      setProfile({
+                                        ...profile,
+                                        medications: profile.medications.map((x, idx) =>
+                                          idx === i
+                                            ? {
+                                                ...x,
+                                                takenToday: {
+                                                  ...(x.takenToday || {}),
+                                                  [tstr]: !taken,
+                                                },
+                                              }
+                                            : x
+                                        ),
+                                      });
+                                    }}
+                                    className={`text-[11px] px-2 py-0.5 rounded border ${
+                                      m.takenToday?.[tstr]
+                                        ? "bg-green-100 border-green-300 text-green-700"
+                                        : "bg-white hover:bg-gray-100"
+                                    }`}
+                                  >
+                                    {tstr} {m.takenToday?.[tstr] ? "✓" : ""}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={askNotif}
+                                className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-100 inline-flex items-center gap-1"
+                              >
+                                <Bell size={14} /> {t.notifications}
+                              </button>
+                              {editMode && (
+                                <button
+                                  onClick={() => {
+                                    setProfile({
+                                      ...profile,
+                                      medications: profile.medications.filter((_, idx) => idx !== i),
+                                    });
+                                    log("Medication removed");
+                                  }}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={askNotif} className="text-xs px-2 py-1 rounded border bg-white hover:bg-gray-100 inline-flex items-center gap-1"><Bell size={14}/> {t.notifications}</button>
-                            {editMode && (<button onClick={()=>{
-                              setProfile({...profile, medications: profile.medications.filter((_,idx)=>idx!==i)});
-                              log("Medication removed");
-                            }} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>)}
-                          </div>
-                        </div>
-                      );
-                    }) : (<p className="text-sm text-gray-500">{t.noData}</p>)}
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-gray-500">{t.noData}</p>
+                    )}
                   </div>
 
                   {editMode && (
                     <div className="mt-3 grid grid-cols-4 gap-2">
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.medName} value={newMed.name} onChange={(e)=>setNewMed({...newMed, name:e.target.value})}/>
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.medDose} value={newMed.dose} onChange={(e)=>setNewMed({...newMed, dose:e.target.value})}/>
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.medFreq} value={newMed.freq} onChange={(e)=>setNewMed({...newMed, freq:e.target.value})}/>
-                      <button onClick={()=>{ if(!newMed.name.trim()) return; setProfile({...profile, medications:[...(profile.medications||[]), { ...newMed, takenToday:{} }]}); setNewMed({name:"",dose:"",freq:""}); log("Medication added"); }} className="bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"><Plus size={16}/> {t.add}</button>
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.medName}
+                        value={newMed.name}
+                        onChange={(e) => setNewMed({ ...newMed, name: e.target.value })}
+                      />
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.medDose}
+                        value={newMed.dose}
+                        onChange={(e) => setNewMed({ ...newMed, dose: e.target.value })}
+                      />
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.medFreq}
+                        value={newMed.freq}
+                        onChange={(e) => setNewMed({ ...newMed, freq: e.target.value })}
+                      />
+                      <button
+                        onClick={() => {
+                          if (!newMed.name.trim()) return;
+                          setProfile({
+                            ...profile,
+                            medications: [...(profile.medications || []), { ...newMed, takenToday: {} }],
+                          });
+                          setNewMed({ name: "", dose: "", freq: "" });
+                          log("Medication added");
+                        }}
+                        className="bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"
+                      >
+                        <Plus size={16} /> {t.add}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -482,25 +682,56 @@ export default function PatientDashboard() {
 
             {/* MEDICAL */}
             {tab === "medical" && (
-              <motion.div key="medical" variants={cardVariant} initial="hidden" animate="visible" exit="exit" className="space-y-4">
-                {["conditions","allergies","prescriptions"].map((field)=> (
+              <motion.div
+                key="medical"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-4"
+              >
+                {["conditions", "allergies", "prescriptions"].map((field) => (
                   <div key={field} className="bg-white rounded-xl border shadow-sm p-4">
                     <h4 className="font-semibold mb-2 flex items-center gap-2 capitalize text-sky-600">
-                      {field==="conditions" && <Stethoscope size={16}/>} {field==="allergies" && <Droplet size={16} className="text-red-500"/>} {field==="prescriptions" && <Pill size={16} className="text-green-600"/>}
+                      {field === "conditions" && <Stethoscope size={16} />}{" "}
+                      {field === "allergies" && <Droplet size={16} className="text-red-500" />}{" "}
+                      {field === "prescriptions" && <Pill size={16} className="text-green-600" />}
                       {t[field]}
                     </h4>
                     <ul className="space-y-1">
-                      {profile[field].map((item, i)=>(
-                        <li key={i} className="flex justify-between items-center bg-gray-50 px-3 py-1.5 rounded-lg">
+                      {profile[field].map((item, i) => (
+                        <li
+                          key={i}
+                          className="flex justify-between items-center bg-gray-50 px-3 py-1.5 rounded-lg"
+                        >
                           <span className="text-gray-700">{item}</span>
-                          {editMode && (<button onClick={()=>removeFrom(field,i)} className="text-red-500 hover:text-red-700"><Trash2 size={14}/></button>)}
+                          {editMode && (
+                            <button
+                              onClick={() => removeFrom(field, i)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>
                     {editMode && (
                       <div className="flex mt-2 gap-2">
-                        <input value={inputs[field.slice(0,-1)]} onChange={(e)=>setInputs({...inputs, [field.slice(0,-1)]: e.target.value})} placeholder={STRINGS.en.addPlaceholder[field.slice(0,-1)]} className="border p-2 rounded w-full text-sm"/>
-                        <button onClick={()=>addSimple(field)} className="bg-sky-500 text-white px-3 rounded hover:bg-sky-600"><Plus size={14}/></button>
+                        <input
+                          value={inputs[field.slice(0, -1)]}
+                          onChange={(e) =>
+                            setInputs({ ...inputs, [field.slice(0, -1)]: e.target.value })
+                          }
+                          placeholder={STRINGS.en.addPlaceholder[field.slice(0, -1)]}
+                          className="border p-2 rounded w-full text-sm"
+                        />
+                        <button
+                          onClick={() => addSimple(field)}
+                          className="bg-sky-500 text-white px-3 rounded hover:bg-sky-600"
+                        >
+                          <Plus size={14} />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -508,18 +739,36 @@ export default function PatientDashboard() {
 
                 {/* Emergency Contacts */}
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h4 className="font-semibold mb-2 text-rose-600 flex items-center gap-2"><Shield size={16}/> {t.emergencyContacts}</h4>
+                  <h4 className="font-semibold mb-2 text-rose-600 flex items-center gap-2">
+                    <Shield size={16} /> {t.emergencyContacts}
+                  </h4>
                   <div className="space-y-2">
-                    {profile.contacts?.map((c,i)=> (
-                      <div key={i} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg">
+                    {profile.contacts?.map((c, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg"
+                      >
                         <div className="text-sm">
-                          <p className="font-medium text-gray-800">{c.name} <span className="text-xs text-gray-500">• {c.relation}</span></p>
+                          <p className="font-medium text-gray-800">
+                            {c.name} <span className="text-xs text-gray-500">• {c.relation}</span>
+                          </p>
                           <p className="text-xs text-gray-600">{mask(c.phone)}</p>
                         </div>
                         <div className="flex gap-2">
-                          <a className="text-sky-600 text-xs border px-2 py-1 rounded" href={`tel:${c.phone}`}>Call</a>
-                          <a className="text-sky-600 text-xs border px-2 py-1 rounded" href={`sms:${c.phone}`}>SMS</a>
-                          {editMode && (<button onClick={()=>removeFrom('contacts', i)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>)}
+                          <a className="text-sky-600 text-xs border px-2 py-1 rounded" href={`tel:${c.phone}`}>
+                            Call
+                          </a>
+                          <a className="text-sky-600 text-xs border px-2 py-1 rounded" href={`sms:${c.phone}`}>
+                            SMS
+                          </a>
+                          {editMode && (
+                            <button
+                              onClick={() => removeFrom("contacts", i)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -530,43 +779,107 @@ export default function PatientDashboard() {
 
             {/* VITALS */}
             {tab === "vitals" && (
-              <motion.div key="vitals" variants={cardVariant} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+              <motion.div
+                key="vitals"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-4"
+              >
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2"><HeartPulse size={18} className="text-rose-500"/> {t.vitalsNow}</h3>
+                  <h3 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                    <HeartPulse size={18} className="text-rose-500" /> {t.vitalsNow}
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="bg-gray-50 rounded-xl p-3">
-                      <div className="flex items-center justify-between"><HeartPulse size={16}/> <span className="text-xs text-gray-500">bpm</span></div>
-                      <div className={`text-2xl font-semibold ${tone(within(hr,[60,100]))}`}>{hr}</div>
+                      <div className="flex items-center justify-between">
+                        <HeartPulse size={16} /> <span className="text-xs text-gray-500">bpm</span>
+                      </div>
+                      <div className={`text-2xl font-semibold ${tone(within(hr, HR_OK))}`}>{hr}</div>
                       <div className="text-xs text-gray-500">Resting 60–100</div>
-                      <div className="mt-1"><Sparkline points={hrSeries} colorClass="text-rose-500"/></div>
+                      <div className="mt-1">
+                        <Sparkline points={hrSeries} colorClass="text-rose-500" />
+                      </div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3">
-                      <div className="flex items-center justify-between"><Droplet size={16}/> <span className="text-xs text-gray-500">SpO₂</span></div>
-                      <div className={`text-2xl font-semibold ${tone(within(spo2,[95,100]))}`}>{spo2}%</div>
+                      <div className="flex items-center justify-between">
+                        <Droplet size={16} /> <span className="text-xs text-gray-500">SpO₂</span>
+                      </div>
+                      <div className={`text-2xl font-semibold ${tone(within(spo2, SPO2_OK))}`}>
+                        {spo2}%
+                      </div>
                       <div className="text-xs text-gray-500">Normal ≥ 95%</div>
-                      <div className="mt-1"><Sparkline points={spo2Series}/></div>
+                      <div className="mt-1">
+                        <Sparkline points={spo2Series} />
+                      </div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3">
-                      <div className="flex items-center justify-between"><Gauge size={16}/> <span className="text-xs text-gray-500">BP</span></div>
-                      <div className={`text-2xl font-semibold ${tone(within(bp.sys,[90,130]) && within(bp.dia,[60,85]))}`}>{bp.sys}/{bp.dia}</div>
+                      <div className="flex items-center justify-between">
+                        <Gauge size={16} /> <span className="text-xs text-gray-500">BP</span>
+                      </div>
+                      <div
+                        className={`text-2xl font-semibold ${
+                          tone(within(bp.sys, BP_SYS_OK) && within(bp.dia, BP_DIA_OK))
+                        }`}
+                      >
+                        {bp.sys}/{bp.dia}
+                      </div>
                       <div className="text-xs text-gray-500">mmHg</div>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3">
-                      <div className="flex items-center justify-between"><Thermometer size={16}/> <span className="text-xs text-gray-500">°C</span></div>
-                      <div className={`text-2xl font-semibold ${tone(within(temp,[36.1,37.2]))}`}>{temp.toFixed(1)}</div>
+                      <div className="flex items-center justify-between">
+                        <Thermometer size={16} /> <span className="text-xs text-gray-500">°C</span>
+                      </div>
+                      <div className={`text-2xl font-semibold ${tone(within(temp, TEMP_OK))}`}>
+                        {temp.toFixed(1)}
+                      </div>
                       <div className="text-xs text-gray-500">36.1–37.2 normal</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h4 className="font-semibold mb-3 flex items-center gap-2"><ClipboardList size={16}/> Manual vitals entry</h4>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <ClipboardList size={16} /> Manual vitals entry
+                  </h4>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                    <input type="number" value={hr} onChange={(e)=>setHr(+e.target.value)} className="border p-2 rounded text-sm" placeholder="HR"/>
-                    <input type="number" value={spo2} onChange={(e)=>setSpo2(+e.target.value)} className="border p-2 rounded text-sm" placeholder="SpO2"/>
-                    <input type="number" value={bp.sys} onChange={(e)=>setBp({...bp, sys:+e.target.value})} className="border p-2 rounded text-sm" placeholder="Sys"/>
-                    <input type="number" value={bp.dia} onChange={(e)=>setBp({...bp, dia:+e.target.value})} className="border p-2 rounded text-sm" placeholder="Dia"/>
-                    <input type="number" step="0.1" value={temp} onChange={(e)=>setTemp(+e.target.value)} className="border p-2 rounded text-sm" placeholder="°C"/>
+                    <input
+                      type="number"
+                      value={hr}
+                      onChange={(e) => setHr(+e.target.value)}
+                      className="border p-2 rounded text-sm"
+                      placeholder="HR"
+                    />
+                    <input
+                      type="number"
+                      value={spo2}
+                      onChange={(e) => setSpo2(+e.target.value)}
+                      className="border p-2 rounded text-sm"
+                      placeholder="SpO2"
+                    />
+                    <input
+                      type="number"
+                      value={bp.sys}
+                      onChange={(e) => setBp({ ...bp, sys: +e.target.value })}
+                      className="border p-2 rounded text-sm"
+                      placeholder="Sys"
+                    />
+                    <input
+                      type="number"
+                      value={bp.dia}
+                      onChange={(e) => setBp({ ...bp, dia: +e.target.value })}
+                      className="border p-2 rounded text-sm"
+                      placeholder="Dia"
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={temp}
+                      onChange={(e) => setTemp(+e.target.value)}
+                      className="border p-2 rounded text-sm"
+                      placeholder="°C"
+                    />
                   </div>
                 </div>
               </motion.div>
@@ -574,27 +887,77 @@ export default function PatientDashboard() {
 
             {/* VISITS */}
             {tab === "visits" && (
-              <motion.div key="visits" variants={cardVariant} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+              <motion.div
+                key="visits"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-4"
+              >
                 <div className="bg-white rounded-xl border shadow-sm p-4">
-                  <h4 className="font-semibold mb-2 flex items-center gap-2"><CalendarClock size={16}/> {t.visitsHdr}</h4>
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <CalendarClock size={16} /> {t.visitsHdr}
+                  </h4>
                   <div className="space-y-2">
-                    {profile.visits?.length ? profile.visits.map((v,i)=>(
-                      <div key={i} className="flex items-start justify-between bg-gray-50 px-3 py-2 rounded-lg">
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{v.date} • {v.doctor}</p>
-                          <p className="text-xs text-gray-600 whitespace-pre-wrap">{v.notes}</p>
+                    {profile.visits?.length ? (
+                      profile.visits.map((v, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start justify-between bg-gray-50 px-3 py-2 rounded-lg"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">
+                              {v.date} • {v.doctor}
+                            </p>
+                            <p className="text-xs text-gray-600 whitespace-pre-wrap">{v.notes}</p>
+                          </div>
+                          {editMode && (
+                            <button
+                              onClick={() => removeFrom("visits", i)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
-                        {editMode && (<button onClick={()=>removeFrom('visits', i)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>)}
-                      </div>
-                    )) : <p className="text-sm text-gray-500">{t.noData}</p>}
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-500">{t.noData}</p>
+                    )}
                   </div>
 
                   {editMode && (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mt-3">
-                      <input type="date" className="border p-2 rounded text-sm" value={newVisit.date} onChange={(e)=>setNewVisit({...newVisit, date:e.target.value})}/>
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.visitDoctor} value={newVisit.doctor} onChange={(e)=>setNewVisit({...newVisit, doctor:e.target.value})}/>
-                      <input className="border p-2 rounded text-sm md:col-span-2" placeholder={STRINGS.en.addPlaceholder.visitNotes} value={newVisit.notes} onChange={(e)=>setNewVisit({...newVisit, notes:e.target.value})}/>
-                      <button onClick={()=>{ if(!newVisit.date || !newVisit.doctor) return; setProfile({...profile, visits:[...profile.visits, newVisit]}); setNewVisit({date:"",doctor:"",notes:""}); log("Visit added"); }} className="bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"><Plus size={16}/> {t.addVisit}</button>
+                      <input
+                        type="date"
+                        className="border p-2 rounded text-sm"
+                        value={newVisit.date}
+                        onChange={(e) => setNewVisit({ ...newVisit, date: e.target.value })}
+                      />
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.visitDoctor}
+                        value={newVisit.doctor}
+                        onChange={(e) => setNewVisit({ ...newVisit, doctor: e.target.value })}
+                      />
+                      <input
+                        className="border p-2 rounded text-sm md:col-span-2"
+                        placeholder={STRINGS.en.addPlaceholder.visitNotes}
+                        value={newVisit.notes}
+                        onChange={(e) => setNewVisit({ ...newVisit, notes: e.target.value })}
+                      />
+                      <button
+                        onClick={() => {
+                          if (!newVisit.date || !newVisit.doctor) return;
+                          setProfile({ ...profile, visits: [...profile.visits, newVisit] });
+                          setNewVisit({ date: "", doctor: "", notes: "" });
+                          log("Visit added");
+                        }}
+                        className="bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"
+                      >
+                        <Plus size={16} /> {t.addVisit}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -603,43 +966,117 @@ export default function PatientDashboard() {
 
             {/* REPORTS */}
             {tab === "reports" && (
-              <motion.div key="reports" variants={cardVariant} initial="hidden" animate="visible" exit="exit" className="space-y-4">
+              <motion.div
+                key="reports"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-4"
+              >
                 <div className="flex items-center gap-2 no-print">
                   <div className="relative flex-1">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2" size={16}/>
-                    <input className="w-full pl-8 pr-3 py-2 border rounded-lg text-sm" placeholder={t.searchReports} value={reportQuery} onChange={(e)=>setReportQuery(e.target.value)}/>
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2" size={16} />
+                    <input
+                      className="w-full pl-8 pr-3 py-2 border rounded-lg text-sm"
+                      placeholder={t.searchReports}
+                      value={reportQuery}
+                      onChange={(e) => setReportQuery(e.target.value)}
+                    />
                   </div>
-                  <button onClick={exportPDF} className="hidden sm:inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50 shadow"><Download size={16}/> {t.exportPdf}</button>
+                  <button
+                    onClick={exportPDF}
+                    className="hidden sm:inline-flex items-center gap-2 bg-white border px-3 py-2 rounded-md hover:bg-gray-50 shadow"
+                  >
+                    <Download size={16} /> {t.exportPdf}
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {filteredReports.length ? filteredReports.map((r,i)=> (
-                    <div key={i} className="bg-white rounded-xl border shadow-sm p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileBarChart size={20} className="text-purple-500"/>
-                        <div>
-                          <p className="font-medium text-gray-800">{r.title}</p>
-                          <p className="text-xs text-gray-500">{r.date}</p>
-                          {r.fileDataUrl && (<img src={r.fileDataUrl} alt="preview" className="mt-2 w-40 h-24 object-cover rounded border"/>) }
+                  {filteredReports.length ? (
+                    filteredReports.map((r, i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-xl border shadow-sm p-4 flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileBarChart size={20} className="text-purple-500" />
+                          <div>
+                            <p className="font-medium text-gray-800">{r.title}</p>
+                            <p className="text-xs text-gray-500">{r.date}</p>
+                            {r.fileDataUrl && (
+                              <img
+                                src={r.fileDataUrl}
+                                alt="preview"
+                                className="mt-2 w-40 h-24 object-cover rounded border"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {r.url ? (
+                            <a
+                              href={r.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-600 text-sm hover:underline flex items-center gap-1"
+                            >
+                              {t.view} <ChevronRight size={14} />
+                            </a>
+                          ) : null}
+                          {editMode && (
+                            <button
+                              onClick={() => removeFrom("labReports", i)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="text-sky-600 text-sm hover:underline flex items-center gap-1">{t.view} <ChevronRight size={14}/></a> : null}
-                        {editMode && (<button onClick={()=>removeFrom('labReports', i)} className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>)}
-                      </div>
-                    </div>
-                  )) : <p className="text-sm text-gray-500">{t.noData}</p>}
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">{t.noData}</p>
+                  )}
                 </div>
 
                 {editMode && (
                   <div className="bg-white rounded-xl border shadow-sm p-4">
                     <h4 className="font-semibold mb-2">Add Report</h4>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.reportTitle} value={newReport.title} onChange={(e)=>setNewReport({...newReport, title:e.target.value})}/>
-                      <input className="border p-2 rounded text-sm" placeholder={STRINGS.en.addPlaceholder.reportUrl} value={newReport.url} onChange={(e)=>setNewReport({...newReport, url:e.target.value})}/>
-                      <input type="date" className="border p-2 rounded text-sm" value={newReport.date} onChange={(e)=>setNewReport({...newReport, date:e.target.value})}/>
-                      <label className="border p-2 rounded text-sm cursor-pointer flex items-center justify-center gap-2"><Upload size={16}/> {t.upload}<input type="file" accept="image/*,application/pdf" className="hidden" onChange={onReportFile}/></label>
-                      <button onClick={addReport} className="md:col-span-4 bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"><Plus size={16}/> {t.add}</button>
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.reportTitle}
+                        value={newReport.title}
+                        onChange={(e) => setNewReport({ ...newReport, title: e.target.value })}
+                      />
+                      <input
+                        className="border p-2 rounded text-sm"
+                        placeholder={STRINGS.en.addPlaceholder.reportUrl}
+                        value={newReport.url}
+                        onChange={(e) => setNewReport({ ...newReport, url: e.target.value })}
+                      />
+                      <input
+                        type="date"
+                        className="border p-2 rounded text-sm"
+                        value={newReport.date}
+                        onChange={(e) => setNewReport({ ...newReport, date: e.target.value })}
+                      />
+                      <label className="border p-2 rounded text-sm cursor-pointer flex items-center justify-center gap-2">
+                        <Upload size={16} /> {t.upload}
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={onReportFile}
+                        />
+                      </label>
+                      <button
+                        onClick={addReport}
+                        className="md:col-span-4 bg-sky-500 text-white px-3 py-2 rounded-md hover:bg-sky-600 inline-flex items-center justify-center gap-2"
+                      >
+                        <Plus size={16} /> {t.add}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -651,16 +1088,29 @@ export default function PatientDashboard() {
 
       {/* Mobile bottom nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow flex justify-around py-2 z-40">
-        {Object.keys(t.tabs).map((key)=> (
-          <button key={key} onClick={()=>setTab(key)} className={`flex-1 text-[11px] ${tab===key?"text-sky-600 font-semibold":"text-gray-500"}`}>{t.tabs[key]}</button>
+        {Object.keys(t.tabs).map((key) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex-1 text-[11px] ${
+              tab === key ? "text-sky-600 font-semibold" : "text-gray-500"
+            }`}
+          >
+            {t.tabs[key]}
+          </button>
         ))}
       </div>
 
       {/* Toast */}
       <AnimatePresence>
         {toast && (
-          <motion.div initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -40, opacity: 0 }} className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50">
-            <CheckCircle2 size={18}/> {toast}
+          <motion.div
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+            className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50"
+          >
+            <CheckCircle2 size={18} /> {toast}
           </motion.div>
         )}
       </AnimatePresence>
