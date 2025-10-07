@@ -91,39 +91,6 @@ export default function Footer() {
             ))}
           </ul>
         </div>
-
-        {/* Column 3 — Contact & Newsletter */}
-        <div>
-          <h4 className="text-xl font-semibold text-white mb-4">{t.contact}</h4>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <MapPin size={16} className="text-yellow-300" />
-              {t.address}
-            </li>
-            <li className="flex items-center gap-2">
-              <Phone size={16} className="text-yellow-300" /> +91 98765 43210
-            </li>
-            <li className="flex items-center gap-2">
-              <Mail size={16} className="text-yellow-300" /> support@medilink360.com
-            </li>
-          </ul>
-          <div className="mt-5">
-            <h5 className="text-white text-sm font-medium mb-2">{t.newsletter}</h5>
-            <form className="flex items-center">
-              <input
-                type="email"
-                placeholder={t.subscribePlaceholder}
-                className="w-full rounded-l-lg px-3 py-2 text-sm text-gray-900 focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="bg-yellow-400 hover:bg-yellow-300 text-sky-900 px-4 py-2 text-sm font-semibold rounded-r-lg transition duration-300"
-              >
-                {t.subscribeBtn}
-              </button>
-            </form>
-          </div>
-        </div>
       </div>
 
       {/* Bottom */}

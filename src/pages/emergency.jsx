@@ -589,8 +589,6 @@ export default function Emergency() {
           <OfflineSMS />
           <div className="mt-4">
             <div className="flex items-center justify-between">
-              <div className="font-medium">Offline Queue</div>
-              <div className="text-sm text-gray-500">{sosQueue.length} pending</div>
             </div>
             {sosQueue.length > 0 ? (
               <ul className="mt-3 space-y-2 text-sm">
@@ -625,7 +623,7 @@ export default function Emergency() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 mt-2">No pending items</p>
+              <p className="text-sm text-gray-500 mt-2"></p>
             )}
 
           </div>
