@@ -59,20 +59,6 @@ export default function Footer() {
           <p className="mt-3 text-sm text-gray-400 max-w-sm">
             Revolutionizing healthcare with AI-powered symptom analysis, emergency triage, and easy doctor connectivity.
           </p>
-          {/* Social */}
-          <div className="mt-4 flex space-x-4">
-            {[Facebook, Twitter, Instagram, Linkedin].map((Icon, idx) => (
-              <motion.a
-                key={idx}
-                whileHover={{ scale: 1.2 }}
-                whileTap={{ scale: 0.9 }}
-                href="#"
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-sky-800/40 hover:bg-yellow-300 hover:text-sky-900 transition duration-300"
-              >
-                <Icon size={18} />
-              </motion.a>
-            ))}
-          </div>
         </div>
 
         {/* Column 2 — Quick Links */}
@@ -93,14 +79,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom */}
-      <div className="border-t border-sky-700/50 text-sm text-gray-400 px-6 py-4 flex flex-col sm:flex-row justify-between items-center max-w-7xl mx-auto">
-        <span>© {new Date().getFullYear()} MediLink360 — {t.rights}</span>
-        <div className="flex gap-4 mt-2 sm:mt-0 text-xs">
-          <Link to="/privacy" className="hover:text-yellow-300 transition-colors">Privacy Policy</Link>
-          <Link to="/terms" className="hover:text-yellow-300 transition-colors">Terms of Service</Link>
-        </div>
-      </div>
     </footer>
   );
 }
