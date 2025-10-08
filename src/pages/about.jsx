@@ -1,15 +1,9 @@
-import React, { useContext } from "react";
-import { motion } from "framer-motion";
-import {
-  Users,
-  HeartPulse,
-  Stethoscope,
-  Globe,
-  Phone,
-  Info,
-} from "lucide-react";
+import React, { useContext, useEffect, useMemo } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Users, HeartPulse, Stethoscope, Globe, Phone, Info } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
+/** i18n */
 const LANGS = {
   en: {
     about: "About Us",
@@ -64,138 +58,155 @@ const LANGS = {
 export default function About() {
   const { lang } = useContext(LanguageContext);
   const t = LANGS[lang] || LANGS.en;
+  const reduceMotion = useReducedMotion();
 
-  const stats = [
-    { icon: <Users className="w-6 h-6 text-indigo-600" />, label: t.doctors, value: 120 },
-    { icon: <HeartPulse className="w-6 h-6 text-red-500" />, label: t.specialties, value: 15 },
-    { icon: <Stethoscope className="w-6 h-6 text-sky-500" />, label: t.consultations, value: "10K+" },
-    { icon: <Globe className="w-6 h-6 text-green-500" />, label: t.cities, value: 10 },
-  ];
+  // SEO: set page title on mount
+  useEffect(() => {
+    const prev = document.title;
+    document.title = `${t.about} · MediLink360`;
+    return () => { document.title = prev; };
+  }, [t.about]);
 
-  const team = [
-    {
-      name: "Dr. Anjali Mehta",
-      role: "Chief Medical Officer",
-      image: "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-    {
-      name: "Dr. Rajesh Kumar",
-      role: "Head of Neurology",
-      image: "https://randomuser.me/api/portraits/men/46.jpg",
-    },
-    {
-      name: "Dr. Priya Sharma",
-      role: "Pediatrics Specialist",
-      image: "https://randomuser.me/api/portraits/women/47.jpg",
-    },
-  ];
+  const stats = useMemo(
+    () => [
+      { icon: <Users className="w-6 h-6 text-indigo-600" aria-hidden="true" />, label: t.doctors, value: "120" },
+      { icon: <HeartPulse className="w-6 h-6 text-red-500" aria-hidden="true" />, label: t.specialties, value: "15" },
+      { icon: <Stethoscope className="w-6 h-6 text-sky-500" aria-hidden="true" />, label: t.consultations, value: "10K+" },
+      { icon: <Globe className="w-6 h-6 text-green-500" aria-hidden="true" />, label: t.cities, value: "10" },
+    ],
+    [t.doctors, t.specialties, t.consultations, t.cities]
+  );
+
+  const team = useMemo(
+    () => [
+      { name: "Dr. Anjali Mehta", role: "Chief Medical Officer", image: "https://randomuser.me/api/portraits/women/44.jpg" },
+      { name: "Dr. Rajesh Kumar", role: "Head of Neurology", image: "https://randomuser.me/api/portraits/men/46.jpg" },
+      { name: "Dr. Priya Sharma", role: "Pediatrics Specialist", image: "https://randomuser.me/api/portraits/women/47.jpg" },
+    ],
+    []
+  );
+
+  const fadeUp = (delay = 0) => ({
+    initial: { opacity: 0, y: reduceMotion ? 0 : 22 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, amount: 0.3 },
+    transition: { duration: 0.6, delay },
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 text-gray-900 flex flex-col">
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
-        className="text-center px-6 pt-16 sm:pt-24"
-      >
-        <h1 className="text-[clamp(2.5rem,6vw,4rem)] font-extrabold bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent">
+    <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 text-gray-900">
+      {/* Hero */}
+      <header className="px-6 pt-16 sm:pt-24 text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: reduceMotion ? 0 : -24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-[clamp(2.25rem,6vw,4rem)] font-extrabold bg-gradient-to-r from-indigo-600 to-sky-500 bg-clip-text text-transparent"
+        >
           {t.about}
-        </h1>
-        <p className="mt-5 text-gray-700 max-w-3xl mx-auto text-lg sm:text-xl leading-relaxed">
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.7, delay: 0.15 }}
+          className="mt-5 text-gray-700 max-w-3xl mx-auto text-lg sm:text-xl leading-relaxed"
+        >
           {t.intro}
-        </p>
-      </motion.div>
+        </motion.p>
+      </header>
 
-      {/* Stats Section */}
-      <div className="max-w-6xl mx-auto mt-16 px-4 grid grid-cols-2 sm:grid-cols-4 gap-6">
-        {stats.map((s, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: i * 0.1 }}
-            className="bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl p-6 flex flex-col items-center shadow-lg hover:scale-105 transition-transform"
-          >
-            {s.icon}
-            <p className="mt-3 text-xl font-bold">{s.value}</p>
-            <p className="mt-1 text-gray-600 text-sm">{s.label}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Mission Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7, delay: 0.2 }}
-        className="mt-20 max-w-4xl mx-auto px-4 text-center"
-      >
-        <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700">
-          {t.missionTitle}
-        </h2>
-        <p className="mt-4 text-gray-700 sm:text-lg leading-relaxed">
-          {t.missionDesc}
-        </p>
-      </motion.div>
-
-      {/* Team Section */}
-      <div className="mt-20 max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-indigo-700 text-center mb-10">
-          {t.experts}
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {team.map((member, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
-              className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-lg p-6 flex flex-col items-center hover:scale-105 transition-transform"
+      {/* Stats */}
+      <section aria-label="Platform statistics" className="max-w-6xl mx-auto mt-16 px-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+          {stats.map((s, i) => (
+            <motion.article
+              key={s.label}
+              {...fadeUp(i * 0.05)}
+              className="bg-white/70 backdrop-blur-lg border border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-xl focus-within:ring-2 ring-indigo-200 transition"
+              tabIndex={0}
+              role="group"
+              aria-label={`${s.value} ${s.label}`}
             >
-              <img
-                src={member.image}
-                alt={member.name}
-                className="w-32 h-32 rounded-full object-cover border-4 border-indigo-100"
-              />
-              <h4 className="mt-4 font-semibold text-indigo-700">{member.name}</h4>
-              <p className="mt-1 text-gray-600">{member.role}</p>
-            </motion.div>
+              <div className="flex flex-col items-center">
+                {s.icon}
+                <p className="mt-3 text-2xl font-extrabold tracking-tight">{s.value}</p>
+                <p className="mt-1 text-gray-600 text-sm">{s.label}</p>
+              </div>
+            </motion.article>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7, delay: 0.3 }}
-        className="mt-20 flex justify-center"
-      >
-        <a
-          href="tel:108"
-          className="flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-sky-500 text-white font-semibold px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-transform"
+      {/* Mission */}
+      <section className="mt-20 max-w-4xl mx-auto px-4 text-center">
+        <motion.h2
+          {...fadeUp(0.05)}
+          className="text-2xl sm:text-3xl font-bold text-indigo-700"
         >
-          <Phone className="w-5 h-5" />
-          {t.contact}
-        </a>
-      </motion.div>
+          {t.missionTitle}
+        </motion.h2>
+        <motion.p
+          {...fadeUp(0.15)}
+          className="mt-4 text-gray-700 sm:text-lg leading-relaxed"
+        >
+          {t.missionDesc}
+        </motion.p>
+      </section>
 
-      <div className="h-16"></div>
+      {/* Team */}
+      <section className="mt-20 max-w-7xl mx-auto px-4">
+        <motion.h2
+          {...fadeUp(0.05)}
+          className="text-2xl sm:text-3xl font-bold text-indigo-700 text-center mb-10"
+        >
+          {t.experts}
+        </motion.h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {team.map((m, i) => (
+            <motion.article
+              key={m.name}
+              {...fadeUp(0.08 + i * 0.06)}
+              className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-lg p-6 flex flex-col items-center hover:shadow-xl transition"
+            >
+              <img
+                src={m.image}
+                loading="lazy"
+                decoding="async"
+                alt={`${m.name} – ${m.role}`}
+                className="w-32 h-32 rounded-full object-cover border-4 border-indigo-100"
+              />
+              <h3 className="mt-4 font-semibold text-indigo-700">{m.name}</h3>
+              <p className="mt-1 text-gray-600">{m.role}</p>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact CTA */}
+      <section className="mt-20 flex justify-center px-4">
+        <motion.a
+          {...fadeUp(0.1)}
+          href="tel:108"
+          className="inline-flex items-center gap-3 bg-gradient-to-r from-indigo-600 to-sky-500 text-white font-semibold px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition focus:outline-none focus-visible:ring-2 ring-offset-2 ring-indigo-300"
+          aria-label={t.contact}
+        >
+          <Phone className="w-5 h-5" aria-hidden="true" />
+          {t.contact}
+        </motion.a>
+      </section>
 
       {/* Disclaimer */}
-      <div className="mt-16 mx-4 sm:mx-10 lg:mx-20 flex items-start gap-4 bg-gradient-to-r from-amber-50 to-yellow-100 border border-yellow-200 rounded-2xl shadow-lg p-6">
-        <Info className="w-7 h-7 text-yellow-600 shrink-0" />
-        <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
-          <span className="font-semibold">Disclaimer:</span> {t.disclaimer}
-        </p>
-      </div>
+      <section className="mt-16 mx-4 sm:mx-10 lg:mx-20">
+        <div className="flex items-start gap-4 bg-gradient-to-r from-amber-50 to-yellow-100 border border-yellow-200 rounded-2xl shadow-lg p-6">
+          <Info className="w-7 h-7 text-yellow-600 shrink-0" aria-hidden="true" />
+          <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+            <span className="font-semibold">Disclaimer:</span> {t.disclaimer}
+          </p>
+        </div>
+      </section>
 
-      <div className="h-16"></div>
-    </div>
+      <div className="h-16" />
+    </main>
   );
 }

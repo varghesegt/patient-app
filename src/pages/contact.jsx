@@ -131,62 +131,6 @@ export default function Contact() {
         ))}
       </div>
 
-      {/* Contact Form */}
-      <div className="max-w-7xl mx-auto mt-20 px-4 flex flex-col lg:flex-row gap-10">
-        <motion.form
-          onSubmit={handleSubmit}
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="flex-1 bg-white/80 backdrop-blur-lg border border-gray-200 rounded-2xl p-8 shadow-lg"
-        >
-          <h2 className="text-2xl font-bold text-indigo-700 mb-6">
-            {t.sendMsg}
-          </h2>
-          <div className="flex flex-col gap-4">
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder={t.yourName}
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder={t.yourEmail}
-              required
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-            <textarea
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              placeholder={t.yourMessage}
-              required
-              rows={5}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-            ></textarea>
-            <button
-              type="submit"
-              className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white py-3 rounded-xl font-medium shadow hover:scale-[1.02] transition"
-            >
-              <Send className="w-5 h-5" /> {t.btnSend}
-            </button>
-          </div>
-          {submitted && (
-            <p className="mt-4 text-green-600 font-medium text-center">
-              {t.success}
-            </p>
-          )}
-        </motion.form>
-      </div>
-
       {/* Disclaimer */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
