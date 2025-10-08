@@ -101,7 +101,7 @@ export default function Contact() {
           {
             icon: <Mail className="w-6 h-6 text-red-500" />,
             title: t.email,
-            info: "support@healthapp.com",
+            info: "support@medilink360.com",
             link: "mailto:support@healthapp.com",
             bg: "bg-white/70",
           },
