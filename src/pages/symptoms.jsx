@@ -14,23 +14,8 @@ import {
   HelpCircle,
   HeartPulse,
   AlertTriangle,
-  Globe,
-  RefreshCcw,
 } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
-
-/**
- * Symptoms.jsx — Advanced, production‑ready AI triage screen
- * 
- * Highlights
- * - Multilingual copy via LanguageContext
- * - Voice dictation (Web Speech API) with graceful fallback
- * - Smart examples (one‑tap prompt inject)
- * - Offline awareness + draft autosave & restore
- * - Triage legend, safety CTA, privacy microcopy
- * - Keyboard shortcuts & accessibility labelling
- * - Subtle motion & glassmorphism, responsive up to 2‑column
- */
 
 const LANGS = {
   en: {
@@ -294,20 +279,6 @@ export default function Symptoms() {
                 {online ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
                 {online ? "Online" : "Offline: basic mode"}
               </span>
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm border transition shadow-sm ${
-                  listening
-                    ? "bg-red-50/80 border-red-200 text-red-700"
-                    : "bg-white/80 border-gray-200 text-gray-700 hover:bg-gray-50"
-                }`}
-                aria-pressed={listening}
-                aria-label={listening ? "Stop voice input" : "Start voice input"}
-              >
-                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                {listening ? "Listening…" : "Dictate"}
-              </button>
             </div>
           </div>
         </div>
@@ -353,9 +324,6 @@ export default function Symptoms() {
           >
             <div className="absolute inset-0 bg-gradient-to-br from-sky-100/40 via-transparent to-sky-50/20 pointer-events-none rounded-3xl" />
 
-            {/* Smart examples */}
-            
-
             {/* The actual form */}
             <SymptomForm />
 
@@ -390,13 +358,11 @@ export default function Symptoms() {
                 <h3 className="font-semibold text-gray-800">{t.legendTitle}</h3>
               </div>
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> High risk: red‑flag symptoms, urgent care suggested</li>
+                <li className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> High risk: red flag symptoms, urgent care suggested</li>
                 <li className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> Medium: follow guidance, monitor and consider consult</li>
-                <li className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Low: home care advice & self‑monitoring</li>
+                <li className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> Low: home care advice & self monitoring</li>
               </ul>
             </section>
-
-
 
             {/* Emergency CTA */}
             <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-md">
@@ -409,7 +375,7 @@ export default function Symptoms() {
                 href="tel:112"
                 className="inline-flex items-center justify-center gap-2 w-full rounded-xl px-4 py-2.5 text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-600"
               >
-                <HeartPulse className="h-4 w-4" /> 112 — Call now
+                <HeartPulse className="h-4 w-4" /> 112 - Call now
               </a>
             </section>
           </motion.aside>
@@ -428,30 +394,6 @@ export default function Symptoms() {
             {t.disclaimer}
           </p>
         </motion.div>
-      </div>
-
-      {/* Bottom help: shortcuts popover substitute */}
-      <div className="fixed bottom-4 right-4 z-10">
-        <div className="group relative">
-          <button
-            type="button"
-            aria-label="Help and shortcuts"
-            className="inline-flex items-center gap-2 rounded-full bg-white/90 backdrop-blur border border-gray-200 shadow-lg px-4 py-2 text-sm hover:bg-white"
-          >
-            <HelpCircle className="h-4 w-4 text-sky-700" />
-            <span className="hidden sm:inline font-medium">{t.shortcuts}</span>
-          </button>
-          <div className="absolute right-0 bottom-12 hidden group-hover:block w-72 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur shadow-xl p-3">
-            <div className="flex items-center gap-2 mb-2 text-gray-800 font-semibold">
-              <Sparkles className="h-4 w-4 text-sky-600" /> {t.shortcuts}
-            </div>
-            <ul className="text-sm text-gray-700 list-disc pl-5 space-y-1">
-              {t.shortcutList.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );
