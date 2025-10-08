@@ -167,6 +167,18 @@ export default function Hospital() {
   const [category, setCategory] = useState("all");
   const mapRef = useRef(null);
   const debouncedSearch = useDebounce(search);
+  const [online, setOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
   /* ✅ Get User Location */
   useEffect(() => {
@@ -175,7 +187,6 @@ export default function Hospital() {
         setUserLocation({ lat: 28.6139, lng: 77.209 });
         return;
       }
-
       try {
         const permission = await navigator.permissions?.query({ name: "geolocation" });
         if (permission?.state === "denied") {
@@ -183,7 +194,6 @@ export default function Hospital() {
           setUserLocation({ lat: 28.6139, lng: 77.209 });
           return;
         }
-
         navigator.geolocation.getCurrentPosition(
           (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
           () => setUserLocation({ lat: 28.6139, lng: 77.209 }),
@@ -196,41 +206,66 @@ export default function Hospital() {
     getLocation();
   }, []);
 
-  /* ✅ Fetch Hospitals */
+  /* ✅ Fetch Hospitals with fallback */
+  const OVERPASS_ENDPOINTS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.openstreetmap.ru/api/interpreter",
+  ];
+
   const fetchHospitals = useCallback(async () => {
     if (!userLocation) return;
     setLoading(true);
-    try {
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        body: buildOverpassQuery(userLocation.lat, userLocation.lng),
-      });
-      const data = await res.json();
-      const mapped = data.elements
-        .map((el) => {
-          const lat = el.lat || el.center?.lat;
-          const lng = el.lon || el.center?.lon;
-          if (!lat || !lng) return null;
-          return {
-            id: el.id,
-            name: el.tags?.name || "Unnamed Medical Facility",
-            type: el.tags?.amenity || el.tags?.healthcare || "medical",
-            lat,
-            lng,
-            address: el.tags?.["addr:street"] || "No address available",
-            distance: getDistanceKm(userLocation, { lat, lng }),
-          };
-        })
-        .filter(Boolean);
-      setPlaces(Array.from(new Map(mapped.map((p) => [p.id, p])).values()));
-    } catch {
-      console.error("Failed to load Overpass data");
-    } finally {
-      setLoading(false);
-    }
-  }, [userLocation]);
+    let success = false;
 
-  useEffect(() => { fetchHospitals(); }, [fetchHospitals]);
+    const radius = maxDistance * 1000; // meters
+    const cacheKey = `${Math.round(userLocation.lat*100)}-${Math.round(userLocation.lng*100)}-${maxDistance}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      setPlaces(JSON.parse(cached));
+      setLoading(false);
+      return;
+    }
+
+    for (const url of OVERPASS_ENDPOINTS) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: buildOverpassQuery(userLocation.lat, userLocation.lng, radius),
+        });
+        const data = await res.json();
+        const mapped = data.elements
+          .map((el) => {
+            const lat = el.lat || el.center?.lat;
+            const lng = el.lon || el.center?.lon;
+            if (!lat || !lng) return null;
+            return {
+              id: el.id,
+              name: el.tags?.name || "Unnamed Medical Facility",
+              type: el.tags?.amenity || el.tags?.healthcare || "medical",
+              lat,
+              lng,
+              address: el.tags?.["addr:street"] || "No address available",
+              distance: getDistanceKm(userLocation, { lat, lng }),
+            };
+          })
+          .filter(Boolean);
+        const unique = Array.from(new Map(mapped.map((p) => [p.id, p])).values());
+        setPlaces(unique);
+        localStorage.setItem(cacheKey, JSON.stringify(unique));
+        success = true;
+        break;
+      } catch (err) {
+        console.warn("Overpass error:", err);
+      }
+    }
+    if (!success) console.error("Failed to load Overpass data");
+    setLoading(false);
+  }, [userLocation, maxDistance]);
+
+  useEffect(() => {
+    fetchHospitals();
+  }, [fetchHospitals]);
 
   /* ✅ Filter & Sort */
   useEffect(() => {
@@ -257,9 +292,14 @@ export default function Hospital() {
   /* ✅ UI */
   return (
     <div className="max-w-7xl mx-auto p-6 text-gray-800">
-      <h1 className="text-3xl font-bold text-blue-700 mb-4">
-        {t?.nav?.hospital || "Nearby Hospitals & Clinics"}
-      </h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold text-blue-700">
+          {t?.nav?.hospital || "Nearby Hospitals & Clinics"}
+        </h1>
+        <span className={`px-3 py-1 text-xs rounded-full ${online ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+          {online ? "Online" : "Offline"}
+        </span>
+      </div>
 
       {/* Search & Filters */}
       <div className="bg-white shadow-lg rounded-lg p-4 mb-6 flex flex-col gap-4">
@@ -276,7 +316,7 @@ export default function Hospital() {
           <input
             type="range"
             min="1"
-            max="20"
+            max="30"
             value={maxDistance}
             onChange={(e) => setMaxDistance(Number(e.target.value))}
             className="w-full accent-blue-500"
@@ -326,6 +366,14 @@ export default function Hospital() {
             </Marker>
           ))}
         </MapContainer>
+        <button
+          onClick={() =>
+            mapRef.current?.setView([userLocation.lat, userLocation.lng], 14, { animate: true })
+          }
+          className="absolute bottom-4 right-4 px-3 py-1.5 bg-white border shadow rounded-full text-sm hover:bg-gray-50"
+        >
+          Recenter
+        </button>
       </div>
 
       {/* Cards */}
@@ -335,7 +383,9 @@ export default function Hospital() {
             key={p.id}
             p={p}
             userLocation={userLocation}
-            onClick={(place) => mapRef.current?.setView([place.lat, place.lng], 15, { animate: true })}
+            onClick={(place) =>
+              mapRef.current?.setView([place.lat, place.lng], 15, { animate: true })
+            }
           />
         ))}
       </div>
