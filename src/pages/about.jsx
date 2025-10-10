@@ -3,7 +3,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Users, HeartPulse, Stethoscope, Globe, Phone, Info } from "lucide-react";
 import { LanguageContext } from "../context/LanguageContext";
 
-/** i18n */
 const LANGS = {
   en: {
     about: "About Us",
@@ -60,7 +59,6 @@ export default function About() {
   const t = LANGS[lang] || LANGS.en;
   const reduceMotion = useReducedMotion();
 
-  // SEO: set page title on mount
   useEffect(() => {
     const prev = document.title;
     document.title = `${t.about} · MediLink360`;
