@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 
-// Example translations (could be external JSON files)
+
 const dictionaries = {
   en: {
     common: {
