@@ -7,7 +7,6 @@ import useTriage from "../../features/symptom-checker/useTriage";
 import { LanguageContext } from "../../context/LanguageContext";
 import { SYMPTOMS_TRANSLATIONS } from "./symptoms.data";
 
-/*Translations */
 const STRINGS = {
   en: {
     title: "AI Symptom Triage",

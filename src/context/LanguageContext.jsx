@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, useMemo } from "react";
-
 const LANGS = {
   en: {
     nav: {
