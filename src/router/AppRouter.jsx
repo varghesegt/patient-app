@@ -1,9 +1,3 @@
-// File: src/router/AppRouter.jsx
-// Router: React Router v6
-// Features: Lazy routes, Suspense fallback, role-based protection, clean redirects,
-//           unauthorized page, 404, scroll restore, and a single Footer at root.
-// Assumes: useAuth() provides { isAuthenticated, user, loading }
-
 import React, { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
