@@ -10,8 +10,6 @@ import {
   WifiOff,
   ShieldCheck,
   Sparkles,
-  Zap,
-  HelpCircle,
   HeartPulse,
   AlertTriangle,
 } from "lucide-react";
