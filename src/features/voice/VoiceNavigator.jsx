@@ -1,15 +1,3 @@
-/**
- * 🔊 MediLink 360 – Smart Voice-AI Companion (Hands-Free)
- * ---------------------------------------------------------
- * - Auto starts listening when app opens
- * - Works for Patients & Guests
- * - Controls full MediLink: Emergency SOS, Symptoms Checker,
- *   Appointments, Records, Doctors, Profile, Contact, etc.
- * - Multilingual: English 🇬🇧 | Hindi 🇮🇳 | Tamil 🇮🇳
- * - Speaks page info, vitals, and feedback
- * - Blind-friendly: no visual input required
- */
-
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -25,23 +13,22 @@ const speak = (text, rate = 1, lang = "en-IN") => {
   synth.cancel();
   synth.speak(u);
 };
-const vibrate = (ms = 150) => navigator.vibrate && navigator.vibrate(ms);
+const vibrate = (ms = 120) => navigator.vibrate && navigator.vibrate(ms);
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/* ---------- Component ---------- */
 export default function VoiceNavigatorHandsFree() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const recRef = useRef(null);
   const [listening, setListening] = useState(false);
+  const [active, setActive] = useState(false); // voice mode toggle
   const [error, setError] = useState("");
 
-  /* ---------- Command Map ---------- */
+  /* ---------- Commands ---------- */
   const commands = useMemo(
     () => [
-      { key: "home", match: /(home|dashboard|main|मेन|முகப்பு)/i, action: () => navigate("/") },
-
-      /*  Patient Features  */
+      { key: "home", match: /(home|dashboard|main|முகப்பு|होम)/i, action: () => navigate("/") },
       { key: "appointments", match: /(appointment|booking|अपॉइंटमेंट|மருத்துவ நேரம்)/i, action: () => navigate("/appointments") },
       { key: "records", match: /(record|history|medical|इतिहास|வரலாறு)/i, action: () => navigate("/records") },
       { key: "doctors", match: /(doctor|specialist|डॉक्टर|மருத்துவர்)/i, action: () => navigate("/doctors") },
@@ -49,7 +36,7 @@ export default function VoiceNavigatorHandsFree() {
       { key: "contact", match: /(contact|support|help desk|संपर्क|தொடர்பு)/i, action: () => navigate("/contact") },
       { key: "about", match: /(about|info|जानकारी|எங்களை பற்றி)/i, action: () => navigate("/about") },
 
-      /*  Emergency & SOS  */
+      /* --- Emergency / SOS --- */
       {
         key: "emergency",
         match: /(emergency|ambulance|sos|help|आपातकाल|அவசரம்)/i,
@@ -64,18 +51,11 @@ export default function VoiceNavigatorHandsFree() {
       {
         key: "sosYes",
         match: /^(yes|yeah|trigger|go ahead|हाँ|ஆமாம்)$/i,
-        action: () => {
-          speak("SOS triggered successfully. Ambulance has been alerted.");
-          // Call your SOS backend trigger here if available
-        },
+        action: () => speak("SOS triggered successfully. Ambulance has been alerted."),
       },
-      {
-        key: "sosNo",
-        match: /^(no|cancel|stop|नहीं|இல்லை)$/i,
-        action: () => speak("Okay, SOS cancelled."),
-      },
+      { key: "sosNo", match: /^(no|cancel|stop|नहीं|இல்லை)$/i, action: () => speak("Okay, SOS cancelled.") },
 
-      /*  Symptom Checker  */
+      /* --- Symptom Checker --- */
       {
         key: "symptom",
         match: /(symptom|check health|fever|pain|लक्षण|அறிகுறி)/i,
@@ -86,7 +66,7 @@ export default function VoiceNavigatorHandsFree() {
         },
       },
 
-      /*  Scroll / Reading / Help  */
+      /* --- Reading / Navigation --- */
       { key: "scrollDown", match: /(scroll down|नीचे|கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
       { key: "scrollUp", match: /(scroll up|ऊपर|மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
       {
@@ -98,24 +78,21 @@ export default function VoiceNavigatorHandsFree() {
           speak(`${title}. ${text}`);
         },
       },
-
-      /*  Account  */
       { key: "logout", match: /(logout|sign out|लॉग आउट|வெளியேறு)/i, action: () => { speak("You are logged out. Stay safe!"); navigate("/login"); } },
       { key: "back", match: /(go back|back|पीछे|பின்னால்)/i, action: () => navigate(-1) },
 
-      /*  Assistance  */
+      /* --- Help & Mode --- */
       {
         key: "help",
         match: /(help|commands|guide|सहायता|உதவி)/i,
-        action: () =>
-          speak("You can say — open emergency, check symptoms, open appointments, read page, or scroll down."),
+        action: () => speak("Say for example: open emergency, check symptoms, read page, or scroll down."),
       },
-      { key: "stop", match: /(stop|quiet|रुको|நிறுத்து)/i, action: () => synth.cancel() },
+      { key: "stop", match: /(stop|quiet|mute|रुको|நிறுத்து)/i, action: () => synth.cancel() },
     ],
     [navigate]
   );
 
-  /* ---------- Init Speech Recognition ---------- */
+  /* ---------- Init SR ---------- */
   useEffect(() => {
     if (!SR) {
       setError("Voice recognition not supported.");
@@ -132,21 +109,43 @@ export default function VoiceNavigatorHandsFree() {
       setListening(false);
       setTimeout(() => {
         try { rec.start(); } catch {}
-      }, 1200); // restart automatically
+      }, 1500);
     };
     rec.onerror = (e) => setError(e.error);
-    rec.onresult = (e) => {
-      const transcript = e.results[e.results.length - 1][0].transcript.toLowerCase().trim();
-      handleCommand(transcript);
+
+    rec.onresult = async (e) => {
+      const text = e.results[e.results.length - 1][0].transcript.toLowerCase().trim();
+
+      // Wake-word detection
+      if (!active && /(hey medilink|hi medilink|ok medilink)/i.test(text)) {
+        vibrate(200);
+        speak("Yes, I'm listening.");
+        setActive(true);
+        return;
+      }
+
+      // Enable or disable voice mode
+      if (/start voice mode/i.test(text)) {
+        setActive(true);
+        speak("Voice mode activated.");
+        return;
+      }
+      if (/stop voice mode/i.test(text)) {
+        setActive(false);
+        speak("Voice mode paused. Say Hey MediLink to wake me again.");
+        return;
+      }
+
+      // If in active mode → parse commands
+      if (active) handleCommand(text);
     };
 
     recRef.current = rec;
     try { rec.start(); } catch (err) { console.warn(err); }
-
     return () => rec.stop();
-  }, []);
+  }, [active]);
 
-  /* ---------- Handle Recognized Command ---------- */
+  /* ---------- Command Handler ---------- */
   const handleCommand = async (speech) => {
     const match = commands.find((c) => c.match.test(speech));
     if (match) {
@@ -154,31 +153,33 @@ export default function VoiceNavigatorHandsFree() {
       await delay(400);
       match.action();
     } else {
-      speak("Sorry, I did not catch that. Say help for assistance.");
+      speak("Sorry, I didn’t catch that. Say help for commands.");
     }
   };
 
   /* ---------- Announce Page ---------- */
   useEffect(() => {
-    const name = location.pathname.split("/").pop() || "home";
-    const title = name.replace("-", " ");
-    speak(`You are now on the ${title} page.`);
+    const page = location.pathname.split("/").pop() || "home";
+    speak(`You are now on the ${page.replace("-", " ")} page.`);
   }, [location.pathname]);
 
-  /* ---------- UI Indicator ---------- */
+  /* ---------- UI ---------- */
   return (
-    <div className="fixed bottom-3 right-3 z-50">
+    <div className="fixed bottom-4 right-4 z-50">
       {error ? (
         <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded text-xs">
           {error}
         </div>
       ) : (
         <div
-          className={`rounded-full w-6 h-6 border-4 ${
-            listening ? "border-green-500 animate-pulse" : "border-gray-400"
-          }`}
+          className={`rounded-full w-8 h-8 border-[3px] flex items-center justify-center
+            ${active ? "border-green-500 animate-ping" : "border-gray-400"}
+            ${listening ? "shadow-[0_0_10px_rgba(34,197,94,0.6)]" : ""}
+          `}
           title={listening ? "Listening…" : "Voice ready"}
-        />
+        >
+          🎤
+        </div>
       )}
     </div>
   );
