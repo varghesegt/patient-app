@@ -34,84 +34,100 @@ export default function VoiceNavigatorHandsFree() {
 
   /* ---------- Command Map (Ultra Expanded) ---------- */
   const commands = useMemo(
-    () => [
-      { key: "home", match: /(home|dashboard|main|start|homepage|begin|मेन|मुख्य|முகப்பு|மெயின்)/i, action: () => navigate("/") },
-      { key: "appointments", match: /(appointment|book|booking|meeting|consult|doctor|visit|अपॉइंटमेंट|மருத்துவ நேரம்|நேரம்|புக்கிங்)/i, action: () => navigate("/appointments") },
-      { key: "records", match: /(record|records|history|medical|report|data|इतिहास|வரலாறு|பதிவு)/i, action: () => navigate("/records") },
-      { key: "doctors", match: /(doctor|specialist|consultant|physician|hospital|clinic|डॉक्टर|மருத்துவர்|மருத்துவமனை)/i, action: () => navigate("/doctors") },
-      { key: "profile", match: /(profile|account|user|details|my info|प्रोफाइल|சுயவிவரம்|பயனர்)/i, action: () => navigate("/profile") },
-      { key: "contact", match: /(contact|support|help|call|reach|email|संपर्क|உதவி|தொடர்பு|அதரவு)/i, action: () => navigate("/contact") },
-      { key: "about", match: /(about|info|information|team|company|जानकारी|எங்களை பற்றி|தகவல்)/i, action: () => navigate("/about") },
+  () => [
+    // Home & Dashboard
+    { key: "home", match: /(home|dashboard|main|start|homepage|begin|go to start|open dashboard|root page|முகப்பு|மெயின்|முதன்மை|முதற்பக்கம்|मेन|मुख्य|मुख पृष्ठ|शुरू|होम पेज)/i, action: () => navigate("/") },
 
-      // Emergency
-      {
-        key: "emergency",
-        match: /(emergency|ambulance|sos|urgent|critical|help|save|आपातकाल|அவசரம்|ஆம்புலன்ஸ்)/i,
-        action: async () => {
-          vibrate(300);
-          safeSpeak("Emergency mode activated. Please stay calm.");
-          navigate("/emergency");
-          await delay(1500);
-          safeSpeak("Do you want to trigger SOS? Say yes or no.");
-        },
+    // Appointments / Booking
+    { key: "appointments", match: /(appointment|book|booking|meeting|consult|doctor|visit|schedule|fix|arrange|reserve|अपॉइंटमेंट|डॉक्टर की मुलाकात|नियुक्ति|மருத்துவ நேரம்|நேரம்|புக்கிங்|சந்திப்பு|அப்பாயின்மென்ட்)/i, action: () => navigate("/appointments") },
+
+    // Records & History
+    { key: "records", match: /(record|records|history|medical|report|data|results|past|files|documents|इतिहास|मेडिकल रिपोर्ट|रिकॉर्ड्स|வரலாறு|பதிவு|பேதைகள்|முன்னைய தகவல்)/i, action: () => navigate("/records") },
+
+    // Doctors / Specialists
+    { key: "doctors", match: /(doctor|specialist|consultant|physician|hospital|clinic|nurse|health staff|medical staff|डॉक्टर|विशेषज्ञ|मेडिकल स्टाफ|மருத்துவர்|மருத்துவமனை|வைத்தியர்|நர்ஸ்)/i, action: () => navigate("/doctors") },
+
+    // Profile / Account
+    { key: "profile", match: /(profile|account|user|details|my info|personal|identity|my account|user page|settings|प्रोफाइल|अकाउंट|मेरी जानकारी|सदस्य|சுயவிவரம்|பயனர்|அக்கவுண்ட்|அடையாளம்)/i, action: () => navigate("/profile") },
+
+    // Contact & Support
+    { key: "contact", match: /(contact|support|help|call|reach|email|helpdesk|talk|assist|connect|संपर्क|मदद|सपोर्ट|हेल्प डेस्क|உதவி|தொடர்பு|அதரவு|ஹெல்ப் டெஸ்க்)/i, action: () => navigate("/contact") },
+
+    // About / Info / Team
+    { key: "about", match: /(about|info|information|team|company|organization|group|background|जानकारी|हमारे बारे में|कंपनी|टीम|எங்களை பற்றி|தகவல்|அமைப்பு|நிறுவனம்|குழு)/i, action: () => navigate("/about") },
+
+    // Emergency / SOS
+    {
+      key: "emergency",
+      match: /(emergency|ambulance|sos|urgent|critical|help|save|救护车|आपातकाल|एम्बुलेंस|अर्जेंट|危急|அவசரம்|ஆம்புலன்ஸ்|உதவி|அடையாளம்|பாதுகாப்பு)/i,
+      action: async () => {
+        vibrate(300);
+        safeSpeak("Emergency mode activated. Please stay calm.");
+        navigate("/emergency");
+        await delay(1500);
+        safeSpeak("Do you want to trigger SOS? Say yes or no.");
       },
-      { key: "sosYes", match: /(yes|yeah|trigger|go ahead|confirm|हाँ|ஆமாம்|ஆம்)/i, action: () => safeSpeak("SOS triggered. Ambulance alerted.") },
-      { key: "sosNo", match: /(no|cancel|stop|नहीं|இல்லை)/i, action: () => safeSpeak("SOS cancelled.") },
+    },
+    { key: "sosYes", match: /(yes|yeah|trigger|go ahead|confirm|affirmative|हाँ|हां|ठीक है|ஆமாம்|ஆம்|சரி|ஆம் போதும்)/i, action: () => safeSpeak("SOS triggered. Ambulance alerted.") },
+    { key: "sosNo", match: /(no|cancel|stop|not now|negative|नहीं|இல்லை|வேண்டாம்|இல்லை இப்போது)/i, action: () => safeSpeak("SOS cancelled.") },
 
-      // Symptom Checker
-      {
-        key: "symptom",
-        match: /(symptom|check health|checkup|pain|problem|issue|diagnosis|लक्षण|அறிகுறி|பிரச்சனை)/i,
-        action: async () => {
-          navigate("/symptoms");
-          await delay(1000);
-          safeSpeak("Symptom checker opened. Describe your issue, like I have fever or headache.");
-        },
+    // Symptom Checker
+    {
+      key: "symptom",
+      match: /(symptom|check health|checkup|pain|problem|issue|disease|diagnosis|health|examine|लक्षण|जाँच|बुखार|दर्द|அறிகுறி|பிரச்சனை|நோய்|பாதிப்பு|பிரச்சனை)/i,
+      action: async () => {
+        navigate("/symptoms");
+        await delay(1000);
+        safeSpeak("Symptom checker opened. Describe your issue, for example say I have chest pain or fever.");
       },
+    },
 
-      // Reading & Scroll
-      { key: "scrollDown", match: /(scroll down|move down|नीचे|கீழே|பக்கம் கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
-      { key: "scrollUp", match: /(scroll up|move up|ऊपर|மேலே|பக்கம் மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
-      {
-        key: "read",
-        match: /(read|speak|listen|describe|tell|सुनाओ|पढ़ो|படி|சொல்)/i,
-        action: () => {
-          if (!speakerOn) return;
-          const title = document.querySelector("h1,h2,h3")?.textContent || "this page";
-          const text = document.body.innerText.slice(0, 300);
-          safeSpeak(`${title}. ${text}`);
-        },
+    // Reading / Scrolling
+    { key: "scrollDown", match: /(scroll down|move down|go down|next section|नीचे|नीचे जाओ|கீழே|கீழே செல்|கீழ் பக்கம்|தாழ்|down)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
+    { key: "scrollUp", match: /(scroll up|move up|go up|previous section|ऊपर|ऊपर जाओ|மேலே|மேலே செல்|மேல் பக்கம்|up)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
+
+    // Read Page
+    {
+      key: "read",
+      match: /(read|speak|listen|describe|tell|explain|summarize|सुनाओ|पढ़ो|बताओ|படி|சொல்|வாசி|சுருக்கம்|பேசு)/i,
+      action: () => {
+        if (!speakerOn) return;
+        const title = document.querySelector("h1,h2,h3")?.textContent || "this page";
+        const text = document.body.innerText.slice(0, 300);
+        safeSpeak(`${title}. ${text}`);
       },
+    },
 
-      // Voice Controls
-      { key: "mute", match: /(mute|speaker off|voice off|stop speaking|quiet|म्यूट|चुप|ம்யூட்|அமைதி)/i, action: () => { setSpeakerOn(false); synth.cancel(); vibrate(100); } },
-      { key: "unmute", match: /(unmute|speaker on|voice on|enable speaker|अनम्यूट|குரல் திற)/i, action: () => { setSpeakerOn(true); vibrate(100); safeSpeak("Speaker enabled."); } },
-      { key: "stop speaking", match: /(stop voice|stop reading|चुप रहो|speak stop|reading off|பேச்சு நிறுத்து)/i, action: () => synth.cancel() },
+    // Voice Controls
+    { key: "mute", match: /(mute|speaker off|voice off|stop speaking|quiet|hush|silence|म्यूट|चुप|शांत|ம்யூட்|அமைதி|மவுண்ட்|சத்தம் நிறுத்து)/i, action: () => { setSpeakerOn(false); synth.cancel(); vibrate(100); } },
+    { key: "unmute", match: /(unmute|speaker on|voice on|enable speaker|resume sound|enable voice|अनम्यूट|आवाज चालू|குரல் திற|சத்தம் ஓடு|சத்தம் திற)/i, action: () => { setSpeakerOn(true); vibrate(100); safeSpeak("Speaker enabled."); } },
+    { key: "stop speaking", match: /(stop voice|stop reading|quiet|reading off|stop talking|silent|speak stop|चुप रहो|पढ़ना बंद|பேச்சு நிறுத்து|சத்தம் நிறுத்து)/i, action: () => synth.cancel() },
 
-      // Mic Controls
-      { key: "pause", match: /(pause listening|stop listening|halt mic|mic off|रुको|நிறுத்து)/i, action: () => stopListening() },
-      { key: "resume", match: /(resume listening|start listening|listen again|mic on|सुनो|கேள்)/i, action: () => startListening() },
+    // Mic Controls
+    { key: "pause", match: /(pause listening|stop listening|halt mic|mic off|disable mic|voice pause|रुको|सुनना बंद|நிறுத்து|மைக் ஆஃப்)/i, action: () => stopListening() },
+    { key: "resume", match: /(resume listening|start listening|listen again|mic on|enable mic|activate mic|सुनो|सुनना शुरू|கேள்|மைக் ஆன்)/i, action: () => startListening() },
 
-      // Navigation
-      { key: "logout", match: /(logout|sign out|exit|log off|लॉग आउट|வெளியேறு)/i, action: () => { safeSpeak("You are logged out. Stay safe!"); navigate("/login"); } },
-      { key: "back", match: /(go back|previous|पीछे|பின்னால்)/i, action: () => navigate(-1) },
+    // Navigation / Account
+    { key: "logout", match: /(logout|sign out|exit|log off|close account|लॉग आउट|बाहर निकलो|वापस जाओ|வெளியேறு|லாக் அவுட்)/i, action: () => { safeSpeak("You are logged out. Stay safe!"); navigate("/login"); } },
+    { key: "back", match: /(go back|previous|backward|पीछे|पिछला पेज|பின்னால்|முந்தைய|முந்தைய பக்கம்)/i, action: () => navigate(-1) },
 
-      // Language Switching
-      { key: "english", match: /(english|set english|switch to english)/i, action: () => { setLang("en-IN"); safeSpeak("Language set to English."); } },
-      { key: "hindi", match: /(hindi|set hindi|switch to hindi|हिंदी)/i, action: () => { setLang("hi-IN"); safeSpeak("भाषा हिंदी में सेट कर दी गई है।"); } },
-      { key: "tamil", match: /(tamil|set tamil|switch to tamil|தமிழ்)/i, action: () => { setLang("ta-IN"); safeSpeak("மொழி தமிழ் அமைக்கப்பட்டது."); } },
+    // Language Switching
+    { key: "english", match: /(english|set english|switch to english|change to english|talk in english)/i, action: () => { setLang("en-IN"); safeSpeak("Language set to English."); } },
+    { key: "hindi", match: /(hindi|set hindi|switch to hindi|हिंदी|बदल हिंदी में|talk in hindi)/i, action: () => { setLang("hi-IN"); safeSpeak("भाषा हिंदी में सेट कर दी गई है।"); } },
+    { key: "tamil", match: /(tamil|set tamil|switch to tamil|தமிழ்|தமிழ் மொழி|talk in tamil)/i, action: () => { setLang("ta-IN"); safeSpeak("மொழி தமிழ் அமைக்கப்பட்டது."); } },
 
-      // Help
-      {
-        key: "help",
-        match: /(help|commands|guide|options|assist|सहायता|உதவி)/i,
-        action: () => safeSpeak("You can say — open emergency, check symptoms, open appointments, mute speaker, or change language."),
-      },
-      { key: "stop", match: /(stop|quiet|चुप|அமைதி)/i, action: () => synth.cancel() },
-    ],
-    [navigate, speakerOn, lang]
-  );
+    // Help / Commands
+    {
+      key: "help",
+      match: /(help|commands|guide|options|assist|support|instructions|सहायता|हेल्प|उपाय|உதவி|ஆப்ஷன்|வழிகாட்டி)/i,
+      action: () => safeSpeak("You can say — open emergency, check symptoms, open appointments, scroll down, change language, or stop reading."),
+    },
 
+    // Stop
+    { key: "stop", match: /(stop|quiet|halt|freeze|रुको|चुप|அமைதி|நிறுத்து)/i, action: () => synth.cancel() },
+  ],
+  [navigate, speakerOn, lang]
+);
   /* ---------- Initialize with Continuous Listening ---------- */
   useEffect(() => {
     if (!SR) {
