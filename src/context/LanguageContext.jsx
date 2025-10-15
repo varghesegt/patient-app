@@ -5,9 +5,11 @@ import { LanguageContext } from "../context/LanguageContext";
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 
+/* ---------- Utilities ---------- */
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const vibrate = (ms = 150) => navigator.vibrate && navigator.vibrate(ms);
 
+/* ---------- VoiceNavigator Component ---------- */
 export default function VoiceNavigatorHandsFree() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,6 +22,7 @@ export default function VoiceNavigatorHandsFree() {
   const [active, setActive] = useState(true);
   const speakerOnRef = useRef(true);
 
+  /* ---------- Language Detection ---------- */
   const detectLanguage = (text) => {
     if (/[\u0B80-\u0BFF]/.test(text)) return "ta"; // Tamil
     if (/[\u0900-\u097F]/.test(text)) return "hi"; // Hindi
