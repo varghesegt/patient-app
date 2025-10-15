@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+/* ---------- Voice Engine Setup ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 
@@ -45,27 +46,27 @@ const LANG_RESPONSES = {
   },
 };
 
-/* ---------- Main Component ---------- */
+/* ---------- Component ---------- */
 export default function VoiceNavigatorHandsFree() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const recRef = useRef(null);
   const [listening, setListening] = useState(false);
-  const [error, setError] = useState("");
-  const [speakerOn, setSpeakerOn] = useState(true);
   const [active, setActive] = useState(true);
-  const [lang, setLang] = useState("en"); // detected language
+  const [speakerOn, setSpeakerOn] = useState(true);
+  const [error, setError] = useState("");
+  const [lang, setLang] = useState("en");
   const speakerOnRef = useRef(true);
 
-  /* ---------- Smart Language Detection ---------- */
+  /* ---------- Detect Spoken Language ---------- */
   const detectLanguage = (text) => {
-    if (/[\u0B80-\u0BFF]/.test(text)) return "ta"; // Tamil unicode range
-    if (/[\u0900-\u097F]/.test(text)) return "hi"; // Hindi unicode range
+    if (/[\u0B80-\u0BFF]/.test(text)) return "ta"; // Tamil
+    if (/[\u0900-\u097F]/.test(text)) return "hi"; // Hindi
     return "en";
   };
 
-  /* ---------- Strict Speak Function ---------- */
+  /* ---------- Text-to-Speech ---------- */
   const speak = async (text, rate = 1) => {
     if (!speakerOnRef.current || !synth) return;
     try {
@@ -85,9 +86,9 @@ export default function VoiceNavigatorHandsFree() {
     } catch {}
   };
 
-  const t = LANG_RESPONSES[lang]; // current language dictionary
+  const t = LANG_RESPONSES[lang];
 
-  /* ---------- Commands ---------- */
+  /* ---------- Command List ---------- */
   const commands = useMemo(
     () => [
       { key: "home", match: /(home|dashboard|main|முகப்பு|मेन)/i, action: () => navigate("/") },
@@ -111,23 +112,25 @@ export default function VoiceNavigatorHandsFree() {
       },
       { key: "sosYes", match: /^(yes|हाँ|ஆமாம்|ஆம்)$/i, action: () => speak(t.sosTriggered) },
       { key: "sosNo", match: /^(no|नहीं|இல்லை)$/i, action: () => speak(t.sosCancelled) },
-
-      { key: "symptom", match: /(symptom|लक्षण|அறிகுறி)/i, action: async () => { navigate("/symptoms"); await delay(1000); await speak("Describe your problem."); } },
+      { key: "symptom", match: /(symptom|लक्षण|அறிகுறி)/i, action: async () => { navigate("/symptoms"); await delay(800); await speak("Describe your problem."); } },
 
       { key: "scrollDown", match: /(scroll down|नीचे|கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
       { key: "scrollUp", match: /(scroll up|ऊपर|மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
+      { key: "read", match: /(read|पढ़ो|படி)/i, action: () => {
+        if (!speakerOnRef.current) return;
+        const title = document.querySelector("h1,h2,h3")?.textContent || "";
+        const text = document.body.innerText.slice(0, 250);
+        speak(`${title}. ${text}`);
+      }},
 
-      { key: "read", match: /(read|पढ़ो|படி)/i, action: () => { if (!speakerOnRef.current) return; const title = document.querySelector("h1,h2,h3")?.textContent || ""; const text = document.body.innerText.slice(0, 250); speak(`${title}. ${text}`); } },
+      { key: "mute", match: /(mute|म्यूट|ம்யூட்)/i, action: () => { speakerOnRef.current = false; setSpeakerOn(false); stopAllSpeech(); vibrate(100); } },
+      { key: "unmute", match: /(unmute|अनम्यूट|குரல் திற)/i, action: () => { speakerOnRef.current = true; setSpeakerOn(true); vibrate(100); speak(t.speakerEnabled); } },
 
-      { key: "mute", match: /(mute|म्यूट|ம்யூட்)/i, action: () => { speakerOnRef.current = false; setSpeakerOn(false); stopAllSpeech(); vibrate(80); } },
-      { key: "unmute", match: /(unmute|अनम्यूट|குரல் திற)/i, action: () => { speakerOnRef.current = true; setSpeakerOn(true); vibrate(80); speak(t.speakerEnabled); } },
-
-      { key: "pause", match: /(pause listening|रुको|நிறுத்து)/i, action: () => stopListening() },
-      { key: "resume", match: /(resume listening|सुनो|கேள்)/i, action: () => startListening() },
+      { key: "pause", match: /(pause listening|stop listening|रुको|நிறுத்து)/i, action: () => stopListening() },
+      { key: "resume", match: /(resume listening|start listening|सुनो|கேள்)/i, action: () => startListening() },
 
       { key: "logout", match: /(logout|exit|लॉग आउट|வெளியேறு)/i, action: async () => { await speak(t.loggedOut); navigate("/login"); } },
       { key: "back", match: /(back|पीछे|பின்னால்)/i, action: () => navigate(-1) },
-
       { key: "help", match: /(help|assist|सहायता|உதவி)/i, action: () => speak(t.help) },
       { key: "stop", match: /(stop|quiet|चुप|அமைதி)/i, action: () => stopAllSpeech() },
     ],
@@ -149,13 +152,15 @@ export default function VoiceNavigatorHandsFree() {
     rec.onstart = () => setListening(true);
     rec.onerror = (e) => {
       if (["no-speech", "network", "aborted"].includes(e.error)) {
-        setTimeout(() => { try { rec.start(); } catch {} }, 1000);
+        if (active) setTimeout(() => { try { rec.start(); } catch {} }, 1000);
       } else setError(e.error);
     };
     rec.onend = () => {
+      setListening(false);
       if (active) {
-        setListening(false);
-        setTimeout(() => { try { rec.start(); } catch {} }, 800);
+        setTimeout(() => {
+          try { rec.start(); } catch {}
+        }, 800);
       }
     };
     rec.onresult = (e) => {
@@ -174,21 +179,40 @@ export default function VoiceNavigatorHandsFree() {
     };
   }, [active]);
 
+  /* ---------- Strict Mic Control ---------- */
   const stopListening = () => {
     setActive(false);
-    try { recRef.current?.stop(); } catch {}
     setListening(false);
+    try {
+      if (recRef.current) {
+        recRef.current.onend = null;
+        recRef.current.abort();
+        recRef.current.stop();
+      }
+    } catch (err) {
+      console.warn("Stop listening error:", err);
+    }
+    stopAllSpeech();
+    speak("Microphone turned off.");
   };
 
   const startListening = () => {
     setActive(true);
-    try { recRef.current?.start(); } catch {}
+    try {
+      if (recRef.current) {
+        recRef.current.start();
+        speak("Microphone activated.");
+      }
+    } catch (err) {
+      console.warn("Start listening error:", err);
+    }
   };
 
+  /* ---------- Handle Spoken Commands ---------- */
   const handleCommand = async (speech) => {
     const match = commands.find((c) => c.match.test(speech));
     if (match) {
-      await speak(`Okay`);
+      await speak("Okay");
       await delay(300);
       match.action();
     } else {
@@ -213,11 +237,15 @@ export default function VoiceNavigatorHandsFree() {
         </div>
       ) : (
         <div
-          className={`rounded-full w-6 h-6 border-4 ${listening ? "border-green-500 animate-pulse" : "border-gray-400"}`}
+          className={`rounded-full w-6 h-6 border-4 ${
+            listening ? "border-green-500 animate-pulse" : "border-gray-400"
+          }`}
           title={listening ? "Listening…" : "Voice ready"}
         />
       )}
+
       <div className="flex gap-2 mt-2">
+        {/* Speaker Button */}
         <button
           onClick={() => {
             const next = !speakerOn;
@@ -226,17 +254,24 @@ export default function VoiceNavigatorHandsFree() {
             if (!next) stopAllSpeech();
             else speak(t.speakerEnabled);
           }}
-          className={`px-3 py-1 text-xs rounded-full border ${speakerOn ? "bg-green-50 border-green-300" : "bg-gray-100 border-gray-300"}`}
+          className={`px-3 py-1 text-xs rounded-full border ${
+            speakerOn ? "bg-green-50 border-green-300" : "bg-gray-100 border-gray-300"
+          }`}
         >
           {speakerOn ? "🔊 Speaker On" : "🔇 Speaker Off"}
         </button>
+
+        {/* Mic Button */}
         <button
           onClick={() => (active ? stopListening() : startListening())}
-          className={`px-3 py-1 text-xs rounded-full border ${active ? "bg-blue-50 border-blue-300" : "bg-gray-100 border-gray-300"}`}
+          className={`px-3 py-1 text-xs rounded-full border ${
+            active ? "bg-blue-50 border-blue-300" : "bg-gray-100 border-gray-300"
+          }`}
         >
           {active ? "🎤 Mic On" : "🛑 Mic Off"}
         </button>
       </div>
+
       <p className="text-[10px] text-gray-500 mt-1">🌐 {lang.toUpperCase()} mode</p>
     </div>
   );
