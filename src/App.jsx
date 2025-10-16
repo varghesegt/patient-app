@@ -37,12 +37,6 @@ export default function App() {
               </Suspense>
             </main>
 
-            {/* =========================
-                Global Voice Navigator
-                - Always active for accessibility
-                - Voice-only support for blind users
-            ========================= */}
-            <VoiceNavigator />
           </div>
         </LanguageProvider>
       </AuthProvider>

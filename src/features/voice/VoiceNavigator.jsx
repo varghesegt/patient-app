@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-/* ---------- Voice Engine Setup ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 
-/* ---------- Utilities ---------- */
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const vibrate = (ms = 150) => navigator.vibrate && navigator.vibrate(ms);
 
