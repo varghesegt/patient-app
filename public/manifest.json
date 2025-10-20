@@ -1,5 +1,5 @@
 {
-  "name": "Medin360 Patient PWA",
+  "name": "Medin360",
   "short_name": "Medin360",
   "description": "A Progressive Web App for patients to access Medin360 healthcare services offline and online.",
   "start_url": "/?source=pwa",
