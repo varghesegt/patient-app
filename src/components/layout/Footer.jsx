@@ -1,8 +1,21 @@
+// src/components/layout/Footer.jsx
+"use client";
+
 import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LanguageContext } from "../../context/LanguageContext";
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  HeartPulse,
+} from "lucide-react";
 
+/* 🌍 Translations */
 const translations = {
   en: {
     quickLinks: "Quick Links",
@@ -11,7 +24,8 @@ const translations = {
     rights: "All rights reserved",
     subscribePlaceholder: "Enter your email",
     subscribeBtn: "Subscribe",
-    address: "MediLink360 HQ, Chennai, India",
+    address: "Medin360 HQ, Chennai, India",
+    tagline: "Empowering Smarter, Faster & Connected Healthcare",
   },
   hi: {
     quickLinks: "त्वरित लिंक",
@@ -20,7 +34,8 @@ const translations = {
     rights: "सर्वाधिकार सुरक्षित",
     subscribePlaceholder: "अपना ईमेल दर्ज करें",
     subscribeBtn: "सदस्यता लें",
-    address: "मेडीलिंक360 मुख्यालय, चेन्नई, भारत",
+    address: "मेडिन360 मुख्यालय, चेन्नई, भारत",
+    tagline: "स्मार्ट, तेज़ और कनेक्टेड हेल्थकेयर को सशक्त बनाना",
   },
   ta: {
     quickLinks: "விரைவு இணைப்புகள்",
@@ -29,7 +44,8 @@ const translations = {
     rights: "அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டுள்ளன",
     subscribePlaceholder: "உங்கள் மின்னஞ்சலை உள்ளிடவும்",
     subscribeBtn: "சந்தா",
-    address: "மெடிலிங்க்360 தலைமையகம், சென்னை, இந்தியா",
+    address: "மெடின்360 தலைமையகம், சென்னை, இந்தியா",
+    tagline: "செயல்திறனான, வேகமான மற்றும் இணைக்கப்பட்ட சுகாதாரம்",
   },
 };
 
@@ -40,42 +56,86 @@ export default function Footer() {
   const quickLinks = [
     { label: "Home", to: "/" },
     { label: "About", to: "/about" },
-    { label: "Contact", to: "/contact" },
     { label: "Hospitals", to: "/hospital" },
     { label: "Emergency", to: "/emergency" },
+    { label: "Contact", to: "/contact" },
   ];
 
   return (
-    <footer className="bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#0f172a] text-gray-300 border-t border-sky-700">
-      {/* Top */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 px-6 py-12">
-        {/* Column 1 — Brand & Social */}
-        <div>
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="MediLink360" className="w-10 h-10 rounded-xl shadow-md" />
-            <h3 className="text-2xl font-bold text-white">MediLink360</h3>
-          </div>
-          <p className="mt-3 text-sm text-gray-400 max-w-sm">
-            Revolutionizing healthcare with AI-powered symptom analysis, emergency triage, and easy doctor connectivity.
-          </p>
-        </div>
+    <footer className="relative bg-gradient-to-b from-[#0f172a] via-[#1e293b] to-[#0b1326] text-gray-300 border-t border-sky-800/60 overflow-hidden">
+      {/* Decorative glow background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.15),transparent_70%)] pointer-events-none"></div>
 
-        {/* Column 2 — Quick Links */}
-        <div>
-          <h4 className="text-xl font-semibold text-white mb-4">{t.quickLinks}</h4>
+      {/* Top Content */}
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-10 py-14 grid grid-cols-1 md:grid-cols-3 gap-10 z-10">
+        {/* Brand Column */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-center gap-3">
+            <motion.img
+              whileHover={{ rotate: 8, scale: 1.05 }}
+              src="/logo.png"
+              alt="Medin360"
+              className="w-11 h-11 rounded-xl shadow-lg"
+            />
+            <h3 className="text-2xl font-extrabold text-white tracking-wide">
+              Medin360
+            </h3>
+          </div>
+          <p className="mt-3 text-sm leading-relaxed text-gray-400 max-w-sm">
+            {t.tagline}. <br />
+            <span className="text-yellow-300 font-medium">
+              <HeartPulse className="inline-block w-4 h-4 mb-1 mr-1 text-yellow-300 animate-pulse" />
+              AI-Powered Health • Voice Navigation • Smart Emergency
+            </span>
+          </p>
+
+          {/* Social Icons */}
+          <div className="flex gap-3 mt-5">
+            {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
+              <motion.a
+                key={i}
+                href="#"
+                whileHover={{ scale: 1.2, y: -2 }}
+                className="p-2 bg-sky-900/40 hover:bg-sky-700/70 rounded-lg transition"
+              >
+                <Icon size={18} className="text-gray-200" />
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Quick Links */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+        >
+          <h4 className="text-xl font-semibold text-white mb-5 border-b border-sky-800/50 pb-2">
+            {t.quickLinks}
+          </h4>
           <ul className="space-y-2">
             {quickLinks.map(({ label, to }) => (
               <li key={label}>
                 <Link
                   to={to}
-                  className="hover:text-yellow-300 text-sm transition-colors duration-300 inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-2 text-sm hover:text-yellow-300 transition-all duration-300 group"
                 >
-                  ➜ {label}
+                  <span className="text-yellow-400 opacity-0 group-hover:opacity-100 transition">➜</span>
+                  {label}
                 </Link>
               </li>
             ))}
           </ul>
-        </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-sky-800/40 py-4 text-center text-xs text-gray-400 bg-[#0b1326]/70 backdrop-blur-md">
+        © {new Date().getFullYear()} <span className="text-yellow-300 font-semibold">Medin360</span> — {t.rights}.
       </div>
     </footer>
   );

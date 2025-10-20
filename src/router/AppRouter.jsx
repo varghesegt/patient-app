@@ -3,8 +3,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Footer from "../components/layout/Footer";
 
-/* ------------------------------- Lazy imports ------------------------------- */
-// Public
 const Home = lazy(() => import("../pages/home.jsx"));
 const Login = lazy(() => import("../pages/login.jsx"));
 const Register = lazy(() => import("../pages/register.jsx"));
@@ -16,7 +14,6 @@ const ConsultDoctor = lazy(() => import("../pages/consultdoctor.jsx"));
 const About = lazy(() => import("../pages/about.jsx"));
 const Contact = lazy(() => import("../pages/contact.jsx"));
 
-// Patient
 const Dashboard = lazy(() => import("../pages/index.jsx"));
 const Profile = lazy(() => import("../pages/profile.jsx"));
 const EmergencyOne = lazy(() => import("../pages/emergencyone.jsx"));
@@ -25,19 +22,16 @@ const SymptomsOne = lazy(() => import("../pages/symptomsone.jsx"));
 const FirstAidOne = lazy(() => import("../pages/firstaidone.jsx"));
 const ConsultDoctorOne = lazy(() => import("../pages/consultdoctorone.jsx"));
 
-// Doctor
 const DoctorDashboard = lazy(() => import("../pages/doctordashboard.jsx"));
 const DoctorAppointments = lazy(() => import("../pages/doctors/appointments.jsx"));
 const DoctorPatients = lazy(() => import("../pages/doctors/patients.jsx"));
 const DoctorAnalytics = lazy(() => import("../pages/doctors/analytics.jsx"));
 
-// Admin/Hospital
 const HospitalDashboard = lazy(() => import("../pages/hospitaldashboard.jsx"));
 const AdminDoctors = lazy(() => import("../pages/admin/doctors.jsx"));
 const AdminPatients = lazy(() => import("../pages/admin/patients.jsx"));
 const AdminSettings = lazy(() => import("../pages/admin/settings.jsx"));
 
-/* ------------------------------- Small screens ------------------------------ */
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen text-sky-600 font-semibold animate-pulse">
     Loading…
@@ -58,7 +52,6 @@ const NotFound = () => (
   </div>
 );
 
-/* ------------------------------- Route guards ------------------------------- */
 function RequireAuth({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
@@ -74,7 +67,6 @@ function RoleRoute({ roles, children }) {
   return roles.includes(user?.role) ? children : <AccessDenied />;
 }
 
-/* ------------------------------ Login redirect ------------------------------ */
 function LoginRedirect() {
   const { isAuthenticated, user, loading } = useAuth();
   const location = useLocation();
@@ -95,20 +87,17 @@ function LoginRedirect() {
   );
 }
 
-/* ------------------------------ Scroll restore ------------------------------ */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
-/* --------------------------------- Router ---------------------------------- */
 export default function AppRouter() {
   return (
     <Suspense fallback={<LoadingScreen />}> 
       <ScrollToTop />
       <Routes>
-        {/* Public routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginRedirect />} />
         <Route path="/register" element={<Register />} />
@@ -120,7 +109,6 @@ export default function AppRouter() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
 
-        {/* Patient routes */}
         <Route
           path="/dashboard"
           element={
@@ -191,8 +179,6 @@ export default function AppRouter() {
             </RequireAuth>
           }
         />
-
-        {/* Doctor routes */}
         <Route
           path="/doctordashboard"
           element={
@@ -233,8 +219,6 @@ export default function AppRouter() {
             </RequireAuth>
           }
         />
-
-        {/* Admin/Hospital routes */}
         <Route
           path="/hospitaldashboard"
           element={
@@ -276,7 +260,6 @@ export default function AppRouter() {
           }
         />
 
-        {/* Fallbacks */}
         <Route path="/unauthorized" element={<AccessDenied />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

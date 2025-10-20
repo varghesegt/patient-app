@@ -1,8 +1,7 @@
-// src/main.jsx
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import "./styles/globals.css"; // Make sure this path exists
+import "./styles/globals.css";
 
 const container = document.getElementById("root");
 
