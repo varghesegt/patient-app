@@ -1,6 +1,4 @@
-// src/components/layout/Footer.jsx
 "use client";
-
 import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,8 +12,6 @@ import {
   MapPin,
   HeartPulse,
 } from "lucide-react";
-
-/* 🌍 Translations */
 const translations = {
   en: {
     quickLinks: "Quick Links",
@@ -63,12 +59,8 @@ export default function Footer() {
 
   return (
     <footer className="relative bg-gradient-to-b from-[#0f172a] via-[#1e293b] to-[#0b1326] text-gray-300 border-t border-sky-800/60 overflow-hidden">
-      {/* Decorative glow background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.15),transparent_70%)] pointer-events-none"></div>
-
-      {/* Top Content */}
       <div className="relative max-w-7xl mx-auto px-6 lg:px-10 py-14 grid grid-cols-1 md:grid-cols-3 gap-10 z-10">
-        {/* Brand Column */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -92,8 +84,6 @@ export default function Footer() {
               AI-Powered Health • Voice Navigation • Smart Emergency
             </span>
           </p>
-
-          {/* Social Icons */}
           <div className="flex gap-3 mt-5">
             {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
               <motion.a
@@ -107,8 +97,6 @@ export default function Footer() {
             ))}
           </div>
         </motion.div>
-
-        {/* Quick Links */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -132,8 +120,6 @@ export default function Footer() {
           </ul>
         </motion.div>
       </div>
-
-      {/* Bottom Bar */}
       <div className="border-t border-sky-800/40 py-4 text-center text-xs text-gray-400 bg-[#0b1326]/70 backdrop-blur-md">
         © {new Date().getFullYear()} <span className="text-yellow-300 font-semibold">Medin360</span> — {t.rights}.
       </div>

@@ -9,7 +9,6 @@ import {
   Stethoscope, Hospital, CalendarDays, BarChart3, Settings, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
 const translations = {
   en: { nav: {
     home: "Home", about: "About", contact: "Contact", login: "Login", logout: "Logout",
@@ -30,22 +29,18 @@ const translations = {
     settings: "அமைப்புகள்", manageDoctors: "மருத்துவர்களை மேலாண்மை செய்", managePatients: "நோயாளிகளை மேலாண்மை செய்"
   }},
 };
-
 const SIDEBAR_EXPANDED = 280;
 const SIDEBAR_COLLAPSED = 84;
 const LS_KEY = "medin360_sidebar_state";
-
 export default function Navbar() {
   const { pathname } = useLocation();
   const { isAuthenticated, logout, user } = useAuth();
   const { lang } = useContext(LanguageContext);
-
   const [isOpen, setIsOpen] = useState(false); // mobile
   const [collapsed, setCollapsed] = useState(() => {
     try { return JSON.parse(localStorage.getItem(LS_KEY) || "false"); }
     catch { return false; }
   });
-
   const t = (key) => {
     const parts = key.split(".");
     let cur = translations[lang] || translations.en;
@@ -55,7 +50,6 @@ export default function Navbar() {
     }
     return cur;
   };
-
   const base = (arr) =>
     arr.map((x) => ({ ...x, id: x.label.toLowerCase().replace(/\s/g, "-") }));
 
@@ -87,7 +81,6 @@ export default function Navbar() {
     { label: t("nav.profile"), path: "/profile", icon: User },
     { label: t("nav.logout"), path: "#logout", icon: LogOut, onClick: () => logout?.() },
   ]);
-
   const roleNav = useMemo(() => {
     if (!isAuthenticated) return navPublic;
     if (user?.role === "doctor") return navDoctor;
@@ -96,7 +89,6 @@ export default function Navbar() {
   }, [isAuthenticated, user?.role, lang]);
 
   const isActive = (p) => pathname === p;
-
   useEffect(() => {
     const apply = () => {
       document.body.style.marginLeft =
@@ -108,7 +100,6 @@ export default function Navbar() {
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
   }, [collapsed]);
-
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(collapsed));
   }, [collapsed]);

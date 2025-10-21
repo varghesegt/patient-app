@@ -42,7 +42,7 @@ export default function ConsultDoctor() {
     { icon: <Stethoscope className="w-6 h-6 text-blue-600" />, title: "General Medicine" },
     { icon: <TestTube className="w-6 h-6 text-pink-700" />, title: "Pathology" },
     { icon: <Microscope className="w-6 h-6 text-indigo-600" />, title: "Oncology" },
-    { icon: <Wind className="w-6 h-6 text-cyan-600" />, title: "Pulmonology" }, // ✅ Works now
+    { icon: <Wind className="w-6 h-6 text-cyan-600" />, title: "Pulmonology" },
   ];
 
 const locations = [
@@ -190,7 +190,6 @@ const doctors = [
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 text-gray-900 flex flex-col">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -207,8 +206,6 @@ const doctors = [
           <span className="text-sky-600 font-semibold">India</span>.
         </p>
       </motion.div>
-
-      {/* Specialty Quick Filters */}
       <div className="max-w-6xl mx-auto px-6 mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
         {specialties.map((s, i) => (
           <motion.button
@@ -224,10 +221,7 @@ const doctors = [
           </motion.button>
         ))}
       </div>
-
-      {/* Search & Filters */}
       <div className="max-w-6xl mx-auto mt-12 px-4 flex flex-col lg:flex-row gap-4 justify-between items-center">
-        {/* Search */}
         <div className="relative w-full lg:w-1/3">
           <Search className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
           <input
@@ -238,7 +232,6 @@ const doctors = [
             className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none"
           />
         </div>
-        {/* Location */}
         <div className="relative w-full lg:w-1/4">
           <MapPin className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
           <select
@@ -253,7 +246,6 @@ const doctors = [
             ))}
           </select>
         </div>
-        {/* Sort */}
         <div className="relative w-full lg:w-1/4">
           <SortAsc className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
           <select
@@ -266,8 +258,6 @@ const doctors = [
           </select>
         </div>
       </div>
-
-      {/* Doctors */}
       <div className="mx-auto mt-16 w-full max-w-7xl px-4 sm:px-8">
         {filteredDoctors.length === 0 ? (
           <p className="text-center text-gray-500">No doctors found.</p>
@@ -301,8 +291,6 @@ const doctors = [
                 <p className="text-sm text-gray-600 flex items-center gap-2">
                   <Languages className="w-4 h-4 text-green-600" /> {doc.languages}
                 </p>
-
-                {/* Rating */}
                 <p className="text-sm flex items-center gap-1 text-yellow-500">
                   {Array.from({ length: 5 }, (_, idx) => (
                     <Star
@@ -314,14 +302,10 @@ const doctors = [
                   ))}
                   <span className="text-gray-700 ml-2">{doc.rating} / 5</span>
                 </p>
-
-                {/* Available Times */}
                 <div className="text-sm text-gray-700 mt-2">
                   <Clock className="w-4 h-4 inline text-indigo-500 mr-1" />
                   Available: {doc.available.join(", ")}
                 </div>
-
-                {/* Actions */}
                 <div className="flex flex-col gap-3 mt-4">
                   <button className="flex items-center justify-center gap-2 w-full bg-indigo-600 text-white py-2 rounded-lg font-medium shadow hover:scale-[1.02] transition">
                     <Video className="w-4 h-4" /> Video Consult
@@ -346,8 +330,6 @@ const doctors = [
           </div>
         )}
       </div>
-
-      {/* Emergency */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

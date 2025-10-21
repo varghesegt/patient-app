@@ -77,7 +77,7 @@ export default function About() {
 
   const founders = [
     {
-      name: "Varghese GT",
+      name: "Varghese G T",
       role: "Founder & CEO",
       image: "/images/founders/varghese.jpg",
     },
@@ -97,7 +97,6 @@ export default function About() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 text-gray-900">
-      {/* Hero */}
       <header className="px-6 pt-16 sm:pt-24 text-center">
         <motion.h1
           initial={{ opacity: 0, y: -24 }}
@@ -116,8 +115,6 @@ export default function About() {
           {t.intro}
         </motion.p>
       </header>
-
-      {/* Stats */}
       <section className="max-w-6xl mx-auto mt-16 px-4 grid grid-cols-2 sm:grid-cols-4 gap-6">
         {stats.map((s, i) => (
           <motion.article
@@ -133,8 +130,6 @@ export default function About() {
           </motion.article>
         ))}
       </section>
-
-      {/* Mission */}
       <section className="mt-20 max-w-4xl mx-auto px-4 text-center">
         <motion.h2 {...fadeUp(0.05)} className="text-2xl sm:text-3xl font-bold text-indigo-700">
           {t.missionTitle}
@@ -143,8 +138,6 @@ export default function About() {
           {t.missionDesc}
         </motion.p>
       </section>
-
-      {/* Founders - Advanced Layout */}
       <section className="mt-20 max-w-6xl mx-auto px-4">
         <motion.h2
           {...fadeUp(0.05)}
@@ -160,7 +153,6 @@ export default function About() {
               {...fadeUp(0.08 + i * 0.06)}
               className="group relative rounded-3xl overflow-hidden shadow-xl border border-white/30 bg-white/40 backdrop-blur-md hover:shadow-2xl transition-transform duration-500 hover:-translate-y-2"
             >
-              {/* Neon gradient glow border */}
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-indigo-500/30 via-sky-400/30 to-transparent opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-700" />
 
               <img
@@ -170,8 +162,6 @@ export default function About() {
                 decoding="async"
                 className="w-full h-[480px] sm:h-[500px] object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
               />
-
-              {/* Overlay */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-6 text-center text-white">
                 <h3 className="text-xl font-semibold drop-shadow-md">{f.name}</h3>
                 <p className="text-sm opacity-90 mt-1">{f.role}</p>
@@ -181,7 +171,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Contact CTA */}
       <section className="mt-20 flex justify-center px-4">
         <motion.a
           {...fadeUp(0.1)}
@@ -191,8 +180,6 @@ export default function About() {
           <Phone className="w-5 h-5" /> {t.contact}
         </motion.a>
       </section>
-
-      {/* Disclaimer */}
       <section className="mt-16 mx-4 sm:mx-10 lg:mx-20">
         <div className="flex items-start gap-4 bg-gradient-to-r from-amber-50 to-yellow-100 border border-yellow-200 rounded-2xl shadow-lg p-6">
           <Info className="w-7 h-7 text-yellow-600 shrink-0" />

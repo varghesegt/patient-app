@@ -2,7 +2,8 @@
 import React, { Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { LanguageProvider } from "./context/LanguageContext"; 
+import { LanguageProvider } from "./context/LanguageContext";
+
 import Navbar from "./components/layout/Navbar";
 import AppRouter from "./router/AppRouter";
 import VoiceNavigator from "./features/voice/VoiceNavigator";
@@ -13,7 +14,13 @@ export default function App() {
       <AuthProvider>
         <LanguageProvider>
           <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50 via-white to-sky-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800 transition-colors duration-300">
+            {/* Global Navbar */}
             <Navbar />
+
+            {/* Voice Assistant (Accessible on All Pages) */}
+            <VoiceNavigator />
+
+            {/* Main App Content */}
             <main className="flex-1">
               <Suspense
                 fallback={
@@ -25,7 +32,6 @@ export default function App() {
                 <AppRouter />
               </Suspense>
             </main>
-
           </div>
         </LanguageProvider>
       </AuthProvider>
