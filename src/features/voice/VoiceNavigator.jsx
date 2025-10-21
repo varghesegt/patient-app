@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+/* ---------- Speech Setup ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 
@@ -59,8 +60,8 @@ export default function VoiceNavigatorHandsFree() {
 
   /* ---------- Detect Spoken Language ---------- */
   const detectLanguage = (text) => {
-    if (/[\u0B80-\u0BFF]/.test(text)) return "ta"; // Tamil
-    if (/[\u0900-\u097F]/.test(text)) return "hi"; // Hindi
+    if (/[\u0B80-\u0BFF]/.test(text)) return "ta";
+    if (/[\u0900-\u097F]/.test(text)) return "hi";
     return "en";
   };
 
@@ -77,16 +78,11 @@ export default function VoiceNavigatorHandsFree() {
       console.warn("Speech error:", err);
     }
   };
-
-  const stopAllSpeech = () => {
-    try {
-      synth.cancel();
-    } catch {}
-  };
+  const stopAllSpeech = () => synth?.cancel();
 
   const t = LANG_RESPONSES[lang];
 
-  /* ---------- Command List ---------- */
+  /* ---------- Commands ---------- */
   const commands = useMemo(
     () => [
       { key: "home", match: /(home|dashboard|main|முகப்பு|मेन)/i, action: () => navigate("/") },
@@ -97,6 +93,7 @@ export default function VoiceNavigatorHandsFree() {
       { key: "contact", match: /(contact|support|help|संपर्क|தொடர்பு)/i, action: () => navigate("/contact") },
       { key: "about", match: /(about|info|जानकारी|தகவல்)/i, action: () => navigate("/about") },
 
+      // 🔴 Emergency and SOS voice integration
       {
         key: "emergency",
         match: /(emergency|ambulance|sos|आपातकाल|அவசரம்)/i,
@@ -104,29 +101,28 @@ export default function VoiceNavigatorHandsFree() {
           vibrate(300);
           await speak(t.emergency);
           navigate("/emergency");
-          await delay(2000);
+          await delay(1500);
           await speak(t.triggerSOS);
+          // trigger event for global SOS handling
+          window.dispatchEvent(new CustomEvent("VOICE_CMD", { detail: { intent: "sos", type: "accident" } }));
         },
       },
       { key: "sosYes", match: /^(yes|हाँ|ஆமாம்|ஆம்)$/i, action: () => speak(t.sosTriggered) },
       { key: "sosNo", match: /^(no|नहीं|இல்லை)$/i, action: () => speak(t.sosCancelled) },
-      { key: "symptom", match: /(symptom|लक्षण|அறிகுறி)/i, action: async () => { navigate("/symptoms"); await delay(800); await speak("Describe your problem."); } },
 
+      // Other navigation & utility
+      { key: "symptom", match: /(symptom|लक्षण|அறிகுறி)/i, action: async () => { navigate("/symptoms"); await delay(800); await speak("Describe your problem."); } },
       { key: "scrollDown", match: /(scroll down|नीचे|கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
       { key: "scrollUp", match: /(scroll up|ऊपर|மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
       { key: "read", match: /(read|पढ़ो|படி)/i, action: () => {
-        if (!speakerOnRef.current) return;
         const title = document.querySelector("h1,h2,h3")?.textContent || "";
         const text = document.body.innerText.slice(0, 250);
         speak(`${title}. ${text}`);
-      }},
-
+      } },
       { key: "mute", match: /(mute|म्यूट|ம்யூட்)/i, action: () => { speakerOnRef.current = false; setSpeakerOn(false); stopAllSpeech(); vibrate(100); } },
       { key: "unmute", match: /(unmute|अनम्यूट|குரல் திற)/i, action: () => { speakerOnRef.current = true; setSpeakerOn(true); vibrate(100); speak(t.speakerEnabled); } },
-
       { key: "pause", match: /(pause listening|stop listening|रुको|நிறுத்து)/i, action: () => stopListening() },
       { key: "resume", match: /(resume listening|start listening|सुनो|கேள்)/i, action: () => startListening() },
-
       { key: "logout", match: /(logout|exit|लॉग आउट|வெளியேறு)/i, action: async () => { await speak(t.loggedOut); navigate("/login"); } },
       { key: "back", match: /(back|पीछे|பின்னால்)/i, action: () => navigate(-1) },
       { key: "help", match: /(help|assist|सहायता|உதவி)/i, action: () => speak(t.help) },
@@ -135,13 +131,12 @@ export default function VoiceNavigatorHandsFree() {
     [navigate, t]
   );
 
-  /* ---------- Speech Recognition Setup ---------- */
+  /* ---------- Speech Recognition ---------- */
   useEffect(() => {
     if (!SR) {
       setError("Voice recognition not supported.");
       return;
     }
-
     const rec = new SR();
     rec.lang = "en-IN";
     rec.interimResults = false;
@@ -155,11 +150,7 @@ export default function VoiceNavigatorHandsFree() {
     };
     rec.onend = () => {
       setListening(false);
-      if (active) {
-        setTimeout(() => {
-          try { rec.start(); } catch {}
-        }, 800);
-      }
+      if (active) setTimeout(() => { try { rec.start(); } catch {} }, 800);
     };
     rec.onresult = (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
@@ -177,36 +168,26 @@ export default function VoiceNavigatorHandsFree() {
     };
   }, [active]);
 
-  /* ---------- Strict Mic Control ---------- */
+  /* ---------- Mic Controls ---------- */
   const stopListening = () => {
     setActive(false);
     setListening(false);
     try {
-      if (recRef.current) {
-        recRef.current.onend = null;
-        recRef.current.abort();
-        recRef.current.stop();
-      }
-    } catch (err) {
-      console.warn("Stop listening error:", err);
-    }
+      recRef.current?.abort();
+      recRef.current?.stop();
+    } catch {}
     stopAllSpeech();
     speak("Microphone turned off.");
   };
-
   const startListening = () => {
     setActive(true);
     try {
-      if (recRef.current) {
-        recRef.current.start();
-        speak("Microphone activated.");
-      }
-    } catch (err) {
-      console.warn("Start listening error:", err);
-    }
+      recRef.current?.start();
+      speak("Microphone activated.");
+    } catch {}
   };
 
-  /* ---------- Handle Spoken Commands ---------- */
+  /* ---------- Command Handler ---------- */
   const handleCommand = async (speech) => {
     const match = commands.find((c) => c.match.test(speech));
     if (match) {
@@ -218,7 +199,7 @@ export default function VoiceNavigatorHandsFree() {
     }
   };
 
-  /* ---------- Page Announcer ---------- */
+  /* ---------- Announce Page ---------- */
   useEffect(() => {
     if (!speakerOnRef.current) return;
     const name = location.pathname.split("/").pop() || "home";
@@ -243,7 +224,6 @@ export default function VoiceNavigatorHandsFree() {
       )}
 
       <div className="flex gap-2 mt-2">
-        {/* Speaker Button */}
         <button
           onClick={() => {
             const next = !speakerOn;
@@ -259,7 +239,6 @@ export default function VoiceNavigatorHandsFree() {
           {speakerOn ? "🔊 Speaker On" : "🔇 Speaker Off"}
         </button>
 
-        {/* Mic Button */}
         <button
           onClick={() => (active ? stopListening() : startListening())}
           className={`px-3 py-1 text-xs rounded-full border ${
@@ -274,3 +253,11 @@ export default function VoiceNavigatorHandsFree() {
     </div>
   );
 }
+
+/* ---------- Global Triggers (for other components) ---------- */
+export const triggerVoiceSOS = (type = "accident") => {
+  window.dispatchEvent(new CustomEvent("VOICE_CMD", { detail: { intent: "sos", type } }));
+};
+export const triggerVoiceCall112 = () => {
+  window.dispatchEvent(new CustomEvent("VOICE_CMD", { detail: { intent: "call_112" } }));
+};
