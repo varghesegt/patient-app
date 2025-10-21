@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-/* ---------- Setup ---------- */
+/* ---------- Speech Setup ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const synth = window.speechSynthesis;
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-const vibrate = (ms = 150) => navigator.vibrate?.(ms);
+const vibrate = (ms = 150) => navigator.vibrate && navigator.vibrate(ms);
 
-/* ---------- Localized Voice Responses ---------- */
+/* ---------- Language Dictionaries ---------- */
 const LANG_RESPONSES = {
   en: {
     youAreOn: (page) => `You are now on the ${page} page.`,
@@ -57,18 +57,17 @@ export default function VoiceNavigatorHandsFree() {
   const [error, setError] = useState("");
   const [lang, setLang] = useState("en");
   const speakerOnRef = useRef(true);
-  const restartDelay = useRef(800);
 
-  /* ---------- Language Detector ---------- */
+  /* ---------- Detect Spoken Language ---------- */
   const detectLanguage = (text) => {
     if (/[\u0B80-\u0BFF]/.test(text)) return "ta";
     if (/[\u0900-\u097F]/.test(text)) return "hi";
     return "en";
   };
 
-  /* ---------- Speech Engine ---------- */
+  /* ---------- Text-to-Speech ---------- */
   const speak = async (text, rate = 1) => {
-    if (!speakerOnRef.current || !synth || !text) return;
+    if (!speakerOnRef.current || !synth) return;
     try {
       synth.cancel();
       const u = new SpeechSynthesisUtterance(text);
@@ -83,61 +82,51 @@ export default function VoiceNavigatorHandsFree() {
 
   const t = LANG_RESPONSES[lang];
 
-  /* ---------- Voice Commands ---------- */
+  /* ---------- Commands ---------- */
   const commands = useMemo(
     () => [
-      { match: /(home|dashboard|main|முகப்பு|मेन)/i, action: () => navigate("/") },
-      { match: /(appointment|doctor|नियम|மருத்துவ நேரம்)/i, action: () => navigate("/appointments") },
-      { match: /(record|history|इतिहास|பதிவு)/i, action: () => navigate("/records") },
-      { match: /(doctor|hospital|डॉक्टर|மருத்துவர்)/i, action: () => navigate("/doctors") },
-      { match: /(profile|account|प्रोफाइल|சுயவிவரம்)/i, action: () => navigate("/profile") },
-      { match: /(contact|support|help|संपर्क|தொடர்பு)/i, action: () => navigate("/contact") },
-      { match: /(about|info|जानकारी|தகவல்)/i, action: () => navigate("/about") },
+      { key: "home", match: /(home|dashboard|main|முகப்பு|मेन)/i, action: () => navigate("/") },
+      { key: "appointments", match: /(appointment|doctor|नियम|மருத்துவ நேரம்)/i, action: () => navigate("/appointments") },
+      { key: "records", match: /(record|history|इतिहास|பதிவு)/i, action: () => navigate("/records") },
+      { key: "doctors", match: /(doctor|hospital|डॉक्टर|மருத்துவர்)/i, action: () => navigate("/doctors") },
+      { key: "profile", match: /(profile|account|प्रोफाइल|சுயவிவரம்)/i, action: () => navigate("/profile") },
+      { key: "contact", match: /(contact|support|help|संपर्क|தொடர்பு)/i, action: () => navigate("/contact") },
+      { key: "about", match: /(about|info|जानकारी|தகவல்)/i, action: () => navigate("/about") },
 
-      // Emergency Integration
+      // 🔴 Emergency and SOS voice integration
       {
+        key: "emergency",
         match: /(emergency|ambulance|sos|आपातकाल|அவசரம்)/i,
         action: async () => {
           vibrate(300);
           await speak(t.emergency);
           navigate("/emergency");
-          await delay(1200);
+          await delay(1500);
           await speak(t.triggerSOS);
-          window.dispatchEvent(
-            new CustomEvent("VOICE_CMD", { detail: { intent: "sos", type: "accident" } })
-          );
+          // trigger event for global SOS handling
+          window.dispatchEvent(new CustomEvent("VOICE_CMD", { detail: { intent: "sos", type: "accident" } }));
         },
       },
-      { match: /^(yes|हाँ|ஆமாம்|ஆம்)$/i, action: () => speak(t.sosTriggered) },
-      { match: /^(no|नहीं|இல்லை)$/i, action: () => speak(t.sosCancelled) },
+      { key: "sosYes", match: /^(yes|हाँ|ஆமாம்|ஆம்)$/i, action: () => speak(t.sosTriggered) },
+      { key: "sosNo", match: /^(no|नहीं|இல்லை)$/i, action: () => speak(t.sosCancelled) },
 
-      // Functional
-      {
-        match: /(symptom|लक्षण|அறிகுறி)/i,
-        action: async () => {
-          navigate("/symptoms");
-          await delay(800);
-          await speak("Describe your problem.");
-        },
-      },
-      { match: /(scroll down|नीचे|கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
-      { match: /(scroll up|ऊपर|மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
-      {
-        match: /(read|पढ़ो|படி)/i,
-        action: () => {
-          const title = document.querySelector("h1,h2,h3")?.textContent || "";
-          const text = document.body.innerText.slice(0, 250);
-          speak(`${title}. ${text}`);
-        },
-      },
-      { match: /(mute|म्यूट|ம்யூட்)/i, action: () => { speakerOnRef.current = false; setSpeakerOn(false); stopAllSpeech(); vibrate(100); } },
-      { match: /(unmute|अनम्यूट|குரல் திற)/i, action: () => { speakerOnRef.current = true; setSpeakerOn(true); vibrate(100); speak(t.speakerEnabled); } },
-      { match: /(pause listening|stop listening|रुको|நிறுத்து)/i, action: () => stopListening() },
-      { match: /(resume listening|start listening|सुनो|கேள்)/i, action: () => startListening() },
-      { match: /(logout|exit|लॉग आउट|வெளியேறு)/i, action: async () => { await speak(t.loggedOut); navigate("/login"); } },
-      { match: /(back|पीछे|பின்னால்)/i, action: () => navigate(-1) },
-      { match: /(help|assist|सहायता|உதவி)/i, action: () => speak(t.help) },
-      { match: /(stop|quiet|चुप|அமைதி)/i, action: () => stopAllSpeech() },
+      // Other navigation & utility
+      { key: "symptom", match: /(symptom|लक्षण|அறிகுறி)/i, action: async () => { navigate("/symptoms"); await delay(800); await speak("Describe your problem."); } },
+      { key: "scrollDown", match: /(scroll down|नीचे|கீழே)/i, action: () => window.scrollBy({ top: 600, behavior: "smooth" }) },
+      { key: "scrollUp", match: /(scroll up|ऊपर|மேலே)/i, action: () => window.scrollBy({ top: -600, behavior: "smooth" }) },
+      { key: "read", match: /(read|पढ़ो|படி)/i, action: () => {
+        const title = document.querySelector("h1,h2,h3")?.textContent || "";
+        const text = document.body.innerText.slice(0, 250);
+        speak(`${title}. ${text}`);
+      } },
+      { key: "mute", match: /(mute|म्यूट|ம்யூட்)/i, action: () => { speakerOnRef.current = false; setSpeakerOn(false); stopAllSpeech(); vibrate(100); } },
+      { key: "unmute", match: /(unmute|अनम्यूट|குரல் திற)/i, action: () => { speakerOnRef.current = true; setSpeakerOn(true); vibrate(100); speak(t.speakerEnabled); } },
+      { key: "pause", match: /(pause listening|stop listening|रुको|நிறுத்து)/i, action: () => stopListening() },
+      { key: "resume", match: /(resume listening|start listening|सुनो|கேள்)/i, action: () => startListening() },
+      { key: "logout", match: /(logout|exit|लॉग आउट|வெளியேறு)/i, action: async () => { await speak(t.loggedOut); navigate("/login"); } },
+      { key: "back", match: /(back|पीछे|பின்னால்)/i, action: () => navigate(-1) },
+      { key: "help", match: /(help|assist|सहायता|உதவி)/i, action: () => speak(t.help) },
+      { key: "stop", match: /(stop|quiet|चुप|அமைதி)/i, action: () => stopAllSpeech() },
     ],
     [navigate, t]
   );
@@ -155,19 +144,13 @@ export default function VoiceNavigatorHandsFree() {
 
     rec.onstart = () => setListening(true);
     rec.onerror = (e) => {
-      if (["no-speech", "aborted", "network"].includes(e.error)) {
-        // Exponential backoff to avoid infinite restarts
-        restartDelay.current = Math.min(restartDelay.current * 1.5, 5000);
-        if (active) setTimeout(() => { try { rec.start(); } catch {} }, restartDelay.current);
+      if (["no-speech", "network", "aborted"].includes(e.error)) {
+        if (active) setTimeout(() => { try { rec.start(); } catch {} }, 1000);
       } else setError(e.error);
     };
     rec.onend = () => {
       setListening(false);
-      if (active) {
-        setTimeout(() => {
-          try { rec.start(); } catch {}
-        }, 800);
-      }
+      if (active) setTimeout(() => { try { rec.start(); } catch {} }, 800);
     };
     rec.onresult = (e) => {
       const transcript = e.results[e.results.length - 1][0].transcript.trim();
@@ -177,7 +160,7 @@ export default function VoiceNavigatorHandsFree() {
     };
 
     recRef.current = rec;
-    try { rec.start(); } catch (err) { console.warn("Speech start failed:", err); }
+    try { rec.start(); } catch (err) { console.warn(err); }
 
     return () => {
       try { rec.stop(); } catch {}
@@ -185,7 +168,7 @@ export default function VoiceNavigatorHandsFree() {
     };
   }, [active]);
 
-  /* ---------- Mic Control ---------- */
+  /* ---------- Mic Controls ---------- */
   const stopListening = () => {
     setActive(false);
     setListening(false);
@@ -206,15 +189,10 @@ export default function VoiceNavigatorHandsFree() {
 
   /* ---------- Command Handler ---------- */
   const handleCommand = async (speech) => {
-    // Wake-word filtering: only respond after “Medilink”
-    const lower = speech.toLowerCase();
-    if (!lower.includes("medilink") && !lower.includes("மெடிலிங்க்") && !lower.includes("मेडिलिंक")) return;
-
-    const cleanSpeech = lower.replace(/medilink|மெடிலிங்க்|मेडिलिंक/g, "").trim();
-    const match = commands.find((c) => c.match.test(cleanSpeech));
+    const match = commands.find((c) => c.match.test(speech));
     if (match) {
       await speak("Okay");
-      await delay(250);
+      await delay(300);
       match.action();
     } else {
       await speak(t.sorry);
@@ -225,14 +203,17 @@ export default function VoiceNavigatorHandsFree() {
   useEffect(() => {
     if (!speakerOnRef.current) return;
     const name = location.pathname.split("/").pop() || "home";
-    speak(t.youAreOn(name.replace("-", " ")));
+    const title = name.replace("-", " ");
+    speak(t.youAreOn(title));
   }, [location.pathname, lang]);
 
   /* ---------- UI ---------- */
   return (
     <div className="fixed bottom-3 right-3 z-50 flex flex-col items-center">
       {error ? (
-        <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded text-xs mb-2">{error}</div>
+        <div className="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded text-xs mb-2">
+          {error}
+        </div>
       ) : (
         <div
           className={`rounded-full w-6 h-6 border-4 ${
@@ -273,7 +254,7 @@ export default function VoiceNavigatorHandsFree() {
   );
 }
 
-/* ---------- Global Trigger Helpers ---------- */
+/* ---------- Global Triggers (for other components) ---------- */
 export const triggerVoiceSOS = (type = "accident") => {
   window.dispatchEvent(new CustomEvent("VOICE_CMD", { detail: { intent: "sos", type } }));
 };
